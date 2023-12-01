@@ -178,11 +178,17 @@ class Bot:
                 max_idx = random.choice(mult_max)
         if next_move == 0:
             self.move_left()
+            return 0
         elif next_move == 1:
             self.move_right()
+            return 1
         elif next_move == 2:
             self.move_up()
+            return 2
         elif next_move == 3:
             self.move_down()
+            return 3
         else:
-            pass  # Do nothing
+            return 4
+
+    

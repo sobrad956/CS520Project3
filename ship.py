@@ -22,6 +22,7 @@ class Cell:
         self.d = d  # Size of the ship
         self.distances = np.asarray([[-1 for j in range(self.d)] for i in range(self.d)])  # Stores distance from this cell to all other cells in the board, closed cells have distance of -1
         self.open_n = []  # Stores the open cells that are directly adjacent to this cell
+        self.one_d_idx = -1
         
     def set_distance(self, row, col, dist):
         self.distances[row][col] = dist
@@ -267,6 +268,14 @@ class Ship:
             i, j = random.sample(cell, 1)[0]  # For each dead end, randomly select one closed neighbor
             self.ship[i][j].open_cell()  # Open the selected closed neighbor
         self.calculate_open_cells()
+
+        idx = 0
+        for i in range(self.D):
+            for j in range(self.D):
+                if self.ship[i][j].is_open():
+                    self.ship[i][j].one_d_idx = idx
+                    idx += 1
+                    
         
 
     def distances_from_crew(self):
@@ -456,4 +465,12 @@ class Ship:
                             p += ((self.alien_probs[i][j+1]) * (1/ self.open_neighbors[i][j+1]))
                     self.set_alien_probs(i,j,p)
                     np.around(self.alien_probs, decimals=10)
+
+    def open_cell_indices(self):
+        # Returns the combination of all open cell pairs with or without replacement
+        mask_func = lambda x: x.is_open()
+        mask = np.asarray([list(map(mask_func, row)) for row in self.ship])
+        #mask_trues = np.where(mask==True)
+        return mask
+        
 
