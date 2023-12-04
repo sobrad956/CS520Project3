@@ -29,7 +29,7 @@ class NN:
     
     #Activation & Loss Functions
     def sigmoid(self, x): 
-        return 1 / (1 + np.exp(-x))
+        return (1 / (1 + np.exp(-x)))
     
     def d_sigmoid(self, x):
         return self.sigmoid(x)*(1-self.sigmoid(x))
@@ -51,7 +51,7 @@ class NN:
     
     def binary_cross_entropy_loss(self, y_pred, y_true): #For binary classification
         m = y_true.shape[0]
-        return -(1/m) * np.sum(y_true*np.log(y_pred) + (1-y_true)*np.log(1-y_pred))
+        return -(1/m) * np.sum(y_true*np.log(y_pred+  10**-100) + (1-y_true)*np.log(1-y_pred+  10**-100) )
     
     def cross_entropy_loss(self, y_pred, y_true): #For multiclass classification
         m = y_true.shape[0]
@@ -62,6 +62,7 @@ class NN:
         # compute the activation of the hidden layer
         self.Z1 = np.matmul(self.W1, X.T) + self.b1
         self.A1 = self.sigmoid(self.Z1)
+        #self.A1 = self.relu(self.Z1)
     
         # compute the activation of the output layer
         self.Z2 = np.matmul(self.W2, self.A1) + self.b2
@@ -69,34 +70,59 @@ class NN:
             self.A2 = self.softmax(self.Z2)
         else:
             self.A2 = self.sigmoid(self.Z2)
+            #self.A2 = self.relu(self.Z2)
         
         return self.A2
     
     # backward propagation
     def backward_propagation(self, X, y):
         #pass
-        #y = y.T
         m = y.shape[0]
+
+
         
-        # compute the derivative of the loss with respect to A2
-        #print(y.shape)
-        #print(self.A2.shape)
-        #dA2 = - (y/self.A2) + ((1-y)/(1-self.A2))
+        # compute the derivative of the loss with respect to A2 (output)
+        #y = y.T
+        
+        #print('y shape: ', y.shape)
+        #print('X shape: ', X.shape)
+        #print('ypred shape: ', self.A2.shape)
+
+        loss = self.binary_cross_entropy_loss(self.A2, y)
+
+        #print('Loss: ', loss)
+
+        dA2 = - (y/(self.A2)) + ((1-y)/((1-self.A2))) #This is correct
+
+        #print('dA2 shape: ', dA2.shape)
     
         # compute the derivative of the activation function of the output layer
-        #dZ2 = dA2 * (self.A2 * (1-self.A2))
+        #dZ2 = dA2 * self.d_relu(self.Z2)
+
+        dZ2 = dA2 * self.d_sigmoid(self.Z2)
+
+        #dZ2 = dA2 * (self.A2 * (1-self.A2)) #This should be correct
+        #print('dZ2 shape: ', dZ2.shape)
+        #print('Z2 shape: ', self.Z2.shape)
     
         # compute the derivative of the weights and biases of the output layer
-        #self.dW2 = (1/m) * np.matmul(dZ2, self.A1.T)
-        #self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
+        self.dW2 = (1/m) * np.matmul(dZ2, self.A1.T)
+        #print('dW2 shape: ', self.dW2.shape)
+        #print('W2 shape: ', self.W2.shape)
+        self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
+        #print('db2 shape: ', self.db2.shape)
+        #print('b2 shape: ', self.b2.shape)
     
         # # compute the derivative of the activation function of the hidden layer
-        #dA1 = np.dot(self.W2.T, dZ2)
+        dA1 = np.dot(self.W2.T, dZ2)
+        dZ1 = dA1 * self.d_sigmoid(self.Z1)
+        #dZ1 = dA1 * self.d_relu(self.Z1)
+
+        
         #dZ1 = dA1 * (self.A1 * (1-self.A1))
-    
         # # compute the derivative of the weights and biases of the hidden layer
-        #self.dW1 = (1/m) * np.dot(dZ1, X)
-        #self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
+        self.dW1 = (1/m) * np.dot(dZ1, X)
+        self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
     
     # update parameters
     def update_parameters(self):
@@ -107,22 +133,28 @@ class NN:
         self.b2 = self.b2 - self.lr * self.db2
     
     # train the neural network
-    def train(self, X, y):
+    def train(self, X, y, X_test, y_test):
         # initialize the weights and biases
         self.initialize_parameters()
     
         for i in range(self.epochs):
-            batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
-            x_batch = X[batch_indices]
-            y_batch = y[batch_indices]
+            #batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
+            #x_batch = X[batch_indices]
+            #y_batch = y[batch_indices]
+
+            x_batch = X
+            y_batch = y
             # forward propagation
             self.forward_propagation(x_batch)
+
+            y_batch = y_batch.T
         
             # compute the loss
             if self.model_type == 1:
                 loss = self.cross_entropy_loss(self.A2, y_batch)
             else:
-                loss = self.binary_cross_entropy_loss(self.A2, y_batch)
+                #loss = self.binary_cross_entropy_loss(self.A2, y_batch)
+                loss = self.binary_cross_entropy_loss(self.A2, y.T)
         
             # backward propagation
             self.backward_propagation(x_batch, y_batch)
@@ -131,13 +163,18 @@ class NN:
             self.update_parameters()
         
             if i % 10 == 0:
-                print(f"iteration {i}: loss = {loss}")
+                self.predict(X_test)
+                test_loss = self.binary_cross_entropy_loss(self.A2, y_test.T)
+                print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
     
     # predict the labels for new data
-    #def predict(self, X):
-    #    self.forward_propagation(X)
-    #    predictions = (self.A2 > 0.5).astype(int)
-    #    return predictions
+    def predict(self, X):
+        if self.model_type == 1:
+            pass
+        else:
+            self.forward_propagation(X)
+            predictions = (self.A2 > 0.5).astype(int)
+            return predictions
 
 
 def clean_data(dataset, train_split, model_type):
@@ -195,7 +232,7 @@ def model1(train_split):
     dataset = np.load('dataframe1.npy', allow_pickle=True)
     X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
 
-    nn = NN(1253, 300, 5, 0.01, 1000, 53, model_type)
+    nn = NN(1253, 300, 5, 0.9, 1000, 53, model_type)
     nn.train(X_train.astype(float), y_train.astype(float))
 
 def model2(train_split):
@@ -203,8 +240,23 @@ def model2(train_split):
     dataset = np.load('dataframe1.npy', allow_pickle=True)
     X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
 
-    nn = NN(1253, 300, 1, 0.01, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
-    nn.train(X_train.astype(float), y_train.astype(float))
+    print(X_train.shape) #(59042, 1253)
+    print(X_test.shape) #(25303, 1253)
+
+
+
+    true_weights = np.random.randn( 1, 1 )
+    x_train = np.random.randn(59042, 1) # matrix of random x data
+    y_train = x_train[:,0] > 0.5
+
+    x_test = np.random.randn( 25303, 1) # matrix of random x data
+    y_test = x_test[:,0] > 0.5
+
+    print(x_train.shape)
+    print(y_train.shape)
+
+    nn = NN(1, 5, 1, 10, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
+    nn.train(x_train.astype(float), y_train.astype(float), x_test.astype(float), y_test.astype(float))
 
 def simulateData(k,boards):
     """This runs the 1 alien, 1 crew member experiments"""
