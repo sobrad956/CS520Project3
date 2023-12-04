@@ -31,12 +31,27 @@ class NN:
     def sigmoid(self, x): 
         return 1 / (1 + np.exp(-x))
     
-    def binary_cross_entropy_loss(self, y_pred, y_true): #For binary classification
-        m = y_true.shape[0]
-        return -(1/m) * np.sum(y_true*np.log(y_pred) + (1-y_true)*np.log(1-y_pred))
+    def d_sigmoid(self, x):
+        return self.sigmoid(x)*(1-self.sigmoid(x))
+    
+    def tanh(self, x):
+        return (2/(1+np.exp(-2*x))) - 1
+    
+    def d_tanh(self, x):
+        return 1-(self.tanh(x)**2)
+    
+    def relu(self, x):
+        return x * (x > 0)
+
+    def d_relu(self, x):
+        return 1.0 * (x > 0)
     
     def softmax(self, x): #For multiclass classification
         return(np.exp(x)/np.exp(x).sum())
+    
+    def binary_cross_entropy_loss(self, y_pred, y_true): #For binary classification
+        m = y_true.shape[0]
+        return -(1/m) * np.sum(y_true*np.log(y_pred) + (1-y_true)*np.log(1-y_pred))
     
     def cross_entropy_loss(self, y_pred, y_true): #For multiclass classification
         m = y_true.shape[0]
@@ -45,11 +60,11 @@ class NN:
     # forward propagation
     def forward_propagation(self, X):    
         # compute the activation of the hidden layer
-        self.Z1 = np.dot(self.W1, X.T) + self.b1
+        self.Z1 = np.matmul(self.W1, X.T) + self.b1
         self.A1 = self.sigmoid(self.Z1)
     
         # compute the activation of the output layer
-        self.Z2 = np.dot(self.W2, self.A1) + self.b2
+        self.Z2 = np.matmul(self.W2, self.A1) + self.b2
         if self.model_type == 1:
             self.A2 = self.softmax(self.Z2)
         else:
@@ -59,29 +74,29 @@ class NN:
     
     # backward propagation
     def backward_propagation(self, X, y):
-        pass
-        # #y = y.T
-        # m = y.shape[0]
+        #pass
+        #y = y.T
+        m = y.shape[0]
         
-        # # compute the derivative of the loss with respect to A2
-        # #print(y.shape)
-        # #print(self.A2.shape)
-        # dA2 = - (y/self.A2) + ((1-y)/(1-self.A2))
+        # compute the derivative of the loss with respect to A2
+        #print(y.shape)
+        #print(self.A2.shape)
+        #dA2 = - (y/self.A2) + ((1-y)/(1-self.A2))
     
-        # # compute the derivative of the activation function of the output layer
-        # dZ2 = dA2 * (self.A2 * (1-self.A2))
+        # compute the derivative of the activation function of the output layer
+        #dZ2 = dA2 * (self.A2 * (1-self.A2))
     
-        # # compute the derivative of the weights and biases of the output layer
-        # self.dW2 = (1/m) * np.dot(dZ2, self.A1.T)
-        # self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
+        # compute the derivative of the weights and biases of the output layer
+        #self.dW2 = (1/m) * np.matmul(dZ2, self.A1.T)
+        #self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
     
         # # compute the derivative of the activation function of the hidden layer
-        # dA1 = np.dot(self.W2.T, dZ2)
-        # dZ1 = dA1 * (self.A1 * (1-self.A1))
+        #dA1 = np.dot(self.W2.T, dZ2)
+        #dZ1 = dA1 * (self.A1 * (1-self.A1))
     
         # # compute the derivative of the weights and biases of the hidden layer
-        # self.dW1 = (1/m) * np.dot(dZ1, X)
-        # self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
+        #self.dW1 = (1/m) * np.dot(dZ1, X)
+        #self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
     
     # update parameters
     def update_parameters(self):
