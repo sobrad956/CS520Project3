@@ -40,7 +40,7 @@ class NN:
     
     def cross_entropy_loss(self, y_pred, y_true): #For multiclass classification
         m = y_true.shape[0]
-        return -(1/m) * np.sum(y_true * np.log(y_pred + 10**-100)) #Added small error for divide by zero errors
+        return -(1/m) * np.sum(y_true * np.log(y_pred.T + 10**-100)) #Added small error for divide by zero errors
     
     # forward propagation
     def forward_propagation(self, X):    
@@ -60,25 +60,28 @@ class NN:
     # backward propagation
     def backward_propagation(self, X, y):
         pass
-    #     m = y.shape[0]
-
-    #     # compute the derivative of the loss with respect to A2
-    #     dA2 = - (y/self.A2) + ((1-y)/(1-self.A2))
+        # #y = y.T
+        # m = y.shape[0]
+        
+        # # compute the derivative of the loss with respect to A2
+        # #print(y.shape)
+        # #print(self.A2.shape)
+        # dA2 = - (y/self.A2) + ((1-y)/(1-self.A2))
     
-    #     # compute the derivative of the activation function of the output layer
-    #     dZ2 = dA2 * (self.A2 * (1-self.A2))
+        # # compute the derivative of the activation function of the output layer
+        # dZ2 = dA2 * (self.A2 * (1-self.A2))
     
-    #     # compute the derivative of the weights and biases of the output layer
-    #     self.dW2 = (1/m) * np.dot(dZ2, self.A1.T)
-    #     self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
+        # # compute the derivative of the weights and biases of the output layer
+        # self.dW2 = (1/m) * np.dot(dZ2, self.A1.T)
+        # self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
     
-    #     # compute the derivative of the activation function of the hidden layer
-    #     dA1 = np.dot(self.W2.T, dZ2)
-    #     dZ1 = dA1 * (self.A1 * (1-self.A1))
+        # # compute the derivative of the activation function of the hidden layer
+        # dA1 = np.dot(self.W2.T, dZ2)
+        # dZ1 = dA1 * (self.A1 * (1-self.A1))
     
-    #     # compute the derivative of the weights and biases of the hidden layer
-    #     self.dW1 = (1/m) * np.dot(dZ1, X)
-    #     self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
+        # # compute the derivative of the weights and biases of the hidden layer
+        # self.dW1 = (1/m) * np.dot(dZ1, X)
+        # self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
     
     # update parameters
     def update_parameters(self):
@@ -89,7 +92,7 @@ class NN:
         self.b2 = self.b2 - self.lr * self.db2
     
     # train the neural network
-    def train(self, X, y, num_iterations):
+    def train(self, X, y):
         # initialize the weights and biases
         self.initialize_parameters()
     
@@ -122,16 +125,22 @@ class NN:
     #    return predictions
 
 
-def clean_data(dataset, train_split):
+def clean_data(dataset, train_split, model_type):
     boundary = int(math.ceil(dataset.shape[0]*train_split))
     train = dataset[:boundary]
     test = dataset[boundary:]
 
     X_train = train[:,0:3]
-    y_train = train[:,3:4] #For model 1, predicting the move
+    if model_type == 1:
+        y_train = train[:,3:4] #For model 1, predicting the move
+    else:
+        y_train = train[:,4:5] #For model 2, predict success
 
     X_test = test[:,0:3]
-    y_test = test[:,3:4] #For model 1, predicting the move
+    if model_type == 1:
+        y_test = test[:,3:4] #For model 1, predicting the move
+    else:
+        y_test = test[:,4:5]
 
     # print("Train shapes:")
     # print(X_train.shape)
@@ -146,7 +155,10 @@ def clean_data(dataset, train_split):
     HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1252)
     X_train = np.hstack((X_train[:,0].reshape(-1, 1), HH))
     print(X_train.shape)
-    y_train = np.concatenate(y_train[:,0]).reshape(X_train.shape[0], 5)
+    if model_type == 1:
+        y_train = np.concatenate(y_train[:,0]).reshape(X_train.shape[0], 5)
+    else:
+        y_train = y_train[:,0].reshape(X_train.shape[0], 1)
     print(y_train.shape)
 
     print()
@@ -155,22 +167,29 @@ def clean_data(dataset, train_split):
     HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1252)
     X_test = np.hstack((X_test[:,0].reshape(-1, 1), HH))
     print(X_test.shape)
-    y_test = np.concatenate(y_test[:,0]).reshape(X_test.shape[0], 5)
+    if model_type == 1:
+        y_test = np.concatenate(y_test[:,0]).reshape(X_test.shape[0], 5)
+    else: 
+        y_test = y_test[:,0].reshape(X_test.shape[0], 1)
     print(y_test.shape)
     return(X_train, y_train, X_test, y_test)
 
 
 def model1(train_split):
+    model_type = 1
     dataset = np.load('dataframe1.npy', allow_pickle=True)
-    X_train, y_train, X_test, y_test = clean_data(dataset, train_split)
+    X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
 
-    nn = NN(1253, 300, 5, 0.01, 1000, 53, 1)
+    nn = NN(1253, 300, 5, 0.01, 1000, 53, model_type)
+    nn.train(X_train.astype(float), y_train.astype(float))
 
 def model2(train_split):
+    model_type = 2
     dataset = np.load('dataframe1.npy', allow_pickle=True)
-    X_train, y_train, X_test, y_test = clean_data(dataset, train_split)
+    X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
 
-    nn = NN(1253, 300, 1, 0.01, 1000, 53, 1) #Batch Size probably not 53 for whole dataset.
+    nn = NN(1253, 300, 1, 0.01, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
+    nn.train(X_train.astype(float), y_train.astype(float))
 
 def simulateData(k,boards):
     """This runs the 1 alien, 1 crew member experiments"""
@@ -308,6 +327,6 @@ def runSimulate():
     
 if __name__ == "__main__":
     #runSimulate()
-    model1(train_split=0.7)
-    #model2(train_split=0.7)
+    #model1(train_split=0.7)
+    model2(train_split=0.7)
     
