@@ -18,6 +18,10 @@ class NN:
         self.epochs = num_epochs
         self.batch_size = batch_size 
         self.model_type = model_type  #Have to define differences in gradients in backprop function
+        self.train_losses = []
+        self.train_batch_losses = []
+        self.test_losses = []
+        self.test_batch_losses = []
         
 
     # initialize weights and biases
@@ -166,6 +170,8 @@ class NN:
                 self.predict(X_test)
                 test_loss = self.binary_cross_entropy_loss(self.A2, y_test.T)
                 print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
+                self.test_losses.append(test_loss)
+                self.train_losses.append(loss)
     
     # predict the labels for new data
     def predict(self, X):
@@ -175,6 +181,9 @@ class NN:
             self.forward_propagation(X)
             predictions = (self.A2 > 0.5).astype(int)
             return predictions
+
+    def plotLoss(self, X):
+        
 
 
 def clean_data(dataset, train_split, model_type):
