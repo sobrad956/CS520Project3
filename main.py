@@ -452,6 +452,7 @@ def simulateData(k,boards):
         shp.distances_from_crew()
         # print("Calculated distances")
         shp.init_crew_prob_one()
+        np.save('init_crew_probs.npy', shp.get_crew_probs())
         # print("init crew prob: ")
         # print(shp.get_crew_probs())
         #print()
@@ -555,11 +556,12 @@ def runSimulate():
         print("ship generated")
         boards.append(shp)
     #experiement takes k, boards
+    np.save('board.npy', boards[0])
     simulateData(k, boards)
 
     
 if __name__ == "__main__":
-    #runSimulate()
-    model1(train_split=0.7)
+    runSimulate()
+    #model1(train_split=0.7)
     #model2(train_split=0.7)
     
