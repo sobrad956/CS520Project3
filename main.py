@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from numpy.random import default_rng
 import math
 import matplotlib.pyplot as plt
 
@@ -10,7 +11,7 @@ from bot import Bot
 
 class NN:
     def __init__(self, input_size, hidden_size, output_size, learning_rate, num_epochs, batch_size, model_type):
-        np.random.seed(0)
+        #np.random.seed(0)
         self.input_size = input_size
         self.hidden_size = hidden_size #only did 1 hidden layer so far
         self.output_size = output_size
@@ -22,7 +23,8 @@ class NN:
         self.train_batch_losses = []
         self.test_losses = []
         self.test_batch_losses = []
-        
+        self.train_accuracies = []
+        self.test_accuracies = []
 
     # initialize weights and biases
     def initialize_parameters(self):
@@ -34,7 +36,6 @@ class NN:
     
     #Activation & Loss Functions
     def sigmoid(self, x):
-        #print(np.min(x))
         return (1 / (1 + np.exp(-x)))
     
     def d_sigmoid(self, x):
@@ -58,11 +59,13 @@ class NN:
     
     def binary_cross_entropy_loss(self, y_pred, y_true): #For binary classification
         m = y_true.shape[0]
-        return -(1/m) * np.sum(np.matmul(y_true, np.log(y_pred+  10**-100) + (1-y_true)*np.log(1-y_pred+  10**-100) ))
+        return -(1/m) * np.sum(np.multiply(y_true, np.log(y_pred+ 1e-15) + (1-y_true)*np.log(1-y_pred+ 1e-15) ))
     
     def cross_entropy_loss(self, y_pred, y_true): #For multiclass classification
         m = y_true.shape[0]
-        return -(1/m) * np.sum(np.matmul(y_true, np.log(y_pred.T +1e-6))) #Added small error for divide by zero errors
+        #print('y_true:', y_true.shape)
+        #print('y_pred:', y_pred.shape)
+        return -(1/m) * np.sum(np.multiply(y_true, np.log(y_pred +1e-15))) #Added small error for divide by zero errors
 
     # forward propagation
     def forward_propagation(self, X, test = False):    
@@ -111,9 +114,9 @@ class NN:
         #print(self.A2.shape)
        
         if self.model_type == 1:
-            dA2 = -(self.A2 - y) #sus
+            dA2 = (self.A2 - y) #sus
         else:
-            dA2 = - (y/(self.A2)+.00001) + ((1-y)/((1-self.A2)+.00001)) #This is correct
+            dA2 = - (y/(self.A2)+1e-15) + ((1-y)/((1-self.A2)+1e-15)) #This is correct
 
         #print('dA2 shape: ', dA2.shape)
     
@@ -165,6 +168,17 @@ class NN:
         self.db2 = 0
     
     # train the neural network
+
+
+    def acc_score(self, y_actual, y_pred):
+        res = np.argmax(y_pred, axis=0)
+        acc = 0
+        for i in range(len(res)):
+            if y_actual[res[i],i] == 1:
+                acc += 1.0
+        acc = acc/y_pred.shape[1]
+        return acc
+
     def train(self, X, y, X_test, y_test):
         # initialize the weights and biases
         self.initialize_parameters()
@@ -193,6 +207,13 @@ class NN:
         
             # compute the loss
             #print("before loss compute")
+
+            
+
+            
+
+            self.train_accuracies.append(self.acc_score(y_batch, self.A2))
+
             if self.model_type == 1:
                 loss = self.cross_entropy_loss(self.A2, y_batch)
             else:
@@ -214,20 +235,24 @@ class NN:
             
             #print(f"iteration {i}: train loss = {loss}")
             #print("before predict")
+            self.test_accuracies.append(self.acc_score(y_test_batch, self.predict(x_test_batch)))
+
+            if self.model_type == 1:
+                    test_loss = self.cross_entropy_loss(self.predict(x_test_batch), y_test_batch)
+            else:
+                test_loss = self.binary_cross_entropy_loss(self.predict(x_test_batch), y_test_batch)
+
+            self.test_losses.append(test_loss)
+            self.train_losses.append(loss)
+
             if i % 10 == 0:
-                
                 
                 # self.predict(x_test_batch)
                 #test_loss = self.binary_cross_entropy_loss(self.predict(X_test), y_test.T)
-                if self.model_type == 1:
-                    test_loss = self.cross_entropy_loss(self.predict(x_test_batch), y_test_batch)
-                else:
-                    test_loss = self.binary_cross_entropy_loss(self.predict(x_test_batch), y_test_batch)
-                print(f"iteration {i}: Total train loss = {loss}")
-                #print(f"iteration {i}: Total train loss = {loss}, total test loss = {test_loss}")
+                #print(f"iteration {i}: Total train loss = {loss}")
+                print(f"iteration {i}: Total train loss = {loss}, total test loss = {test_loss}")
                 # print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
-                #self.test_losses.append(test_loss)
-                self.train_losses.append(loss)
+                
 
             #print(self.A2)
             #print(self.b1)
@@ -237,13 +262,11 @@ class NN:
     def predict(self, X):
         if self.model_type == 1:
             A2 = self.forward_propagation(X, True)
-            #print('logits', A2[:,0:2])
-            #print("A2:" , A2.shape)
-            pred = np.zeros((5, X.shape[0]))
+            pred = np.zeros((X.shape[0], 5))
             res = np.asarray([np.argmax(A2[:,i]) for i in range(A2.shape[1])])
-            #print("res", res)
-            pred[res] = 1
-            return pred
+            for i in range(len(res)):
+                pred[i, res[i]] =1
+            return pred.T
         else:
             A2 = self.forward_propagation(X, True)
             predictions = (A2 > 0.5).astype(int)
@@ -257,13 +280,42 @@ class NN:
         plt.savefig('loss_plot.png')
         plt.show()
         plt.close()
-        
+
+    def plotAcc(self):
+        plt.plot(self.test_accuracies, label='test')
+        plt.plot(self.train_accuracies, label='train')
+        plt.legend(loc='best')
+        plt.title('Accuracy Plot')
+        plt.savefig('acc.png')
+        plt.show()
+        plt.close()
+
+    
+    
 
 
 def clean_data(dataset, train_split, model_type):
+    #print(dataset.shape)
+    #dataset = dataset.T
+    #print(dataset.shape)
+    #np.random.shuffle(dataset)
+    #print(dataset.shape)
+    #dataset = dataset.T
+    #print(dataset.shape)
+
     boundary = int(math.ceil(dataset.shape[0]*train_split))
-    train = dataset[:boundary]
-    test = dataset[boundary:]
+
+    rng = default_rng()
+    idx = rng.choice(dataset.shape[0], size = boundary, replace=False)
+    mask = np.ones(dataset.shape[0], dtype=bool)
+    mask[idx] = False
+
+    train = dataset[~mask, :]
+    test = dataset[mask, :]
+
+    
+    #train = dataset[:boundary]
+    #test = dataset[boundary:]
 
     X_train = train[:,0:3]
     if model_type == 1:
@@ -286,17 +338,17 @@ def clean_data(dataset, train_split, model_type):
     # print(y_test.shape)
     # print()
 
-    #print("Train Reshaped:")
+    print("Train Reshaped:")
     HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1252)
     X_train = np.hstack((X_train[:,0].reshape(-1, 1), HH))
-    #print(X_train.shape)
+    print(X_train.shape)
     if model_type == 1:
         y_train = np.concatenate(y_train[:,0]).reshape(X_train.shape[0], 5)
     else:
         y_train = y_train[:,0].reshape(X_train.shape[0], 1)
-    #print(y_train.shape)
+    print(y_train.shape)
 
-    #print()
+    print()
 
     print("Test Reshaped:")
     HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1252)
@@ -335,10 +387,11 @@ def model1(train_split):
     #     else:
     #         y_test[i,1] = 1
 
-    nn = NN(1253, 300, 5, 0.9, 1000, 53, model_type)
-    #nn = NN(1, 10, 5, .001, 1000, 53, model_type)
+    nn = NN(1253, 300, 5, 0.01, 1000, 53, model_type)
+    #nn = NN(1, 10, 5, .1, 1000, 53, model_type)
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
+    nn.plotAcc()
 
 def model2(train_split):
     model_type = 2
@@ -354,19 +407,20 @@ def model2(train_split):
 
 
     #true_weights = np.random.randn( 1, 2 )
-    #X_train = np.random.randn(59042, 2) # matrix of random x data
-    #y_train = X_train[:,1] > 0.5
+    # X_train = np.random.randn(59042, 5) # matrix of random x data
+    # y_train = X_train[:,1] > 0.5
 
-    #X_test = np.random.randn( 25303, 2) # matrix of random x data
-    #y_test = X_test[:,1] > 0.5
+    # X_test = np.random.randn( 25303, 5) # matrix of random x data
+    # y_test = X_test[:,1] > 0.5
 
     #print(x_train.shape)
     #print(y_train.shape)
 
-    nn = NN(1253, 300, 1, .1, 10000, 53, model_type) #Batch Size probably not 53 for whole dataset.
-    #nn = NN(2, 5, 1, .9, 1000, 53, model_type)
+    nn = NN(1253, 300, 1, .1, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
+    #nn = NN(5, 20, 1, .1, 1000, 53, model_type)
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
+    nn.plotAcc()
 
 def simulateData(k,boards):
     """This runs the 1 alien, 1 crew member experiments"""
@@ -487,6 +541,8 @@ def simulateData(k,boards):
     dataframe = np.hstack((data, labels))
     #print(dataframe[-2:])
     np.save('dataframe.npy', dataframe)
+    
+
 
 def runSimulate():
     k = 3
