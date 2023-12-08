@@ -12,10 +12,11 @@ import pickle
 
 
 class NN:
-    def __init__(self, input_size, hidden_size, output_size, learning_rate, num_epochs, batch_size, model_type):
+    def __init__(self, input_size, hidden_size1, hidden_size2, output_size, learning_rate, num_epochs, batch_size, model_type):
         #np.random.seed(0)
         self.input_size = input_size
-        self.hidden_size = hidden_size #only did 1 hidden layer so far
+        self.hidden_size1 = hidden_size1
+        self.hidden_size2 = hidden_size2
         self.output_size = output_size
         self.lr = learning_rate  #Haven't done anything smarter than standard SGD here
         self.epochs = num_epochs
@@ -28,12 +29,17 @@ class NN:
         self.train_accuracies = []
         self.test_accuracies = []
 
+        self.test_losses_smooth = []
+        self.train_losses_smooth = []
+
     # initialize weights and biases
     def initialize_parameters(self):
-        self.W1 = np.random.randn(self.hidden_size, self.input_size) * math.sqrt(1.0/self.input_size) #np.zeros(self.hidden_size, self.input_size) #np.random.randn(self.hidden_size, self.input_size) * 0.01 #Haven't done anything interesting in initialization
-        self.b1 = np.zeros((self.hidden_size, 1))
-        self.W2 = np.random.randn(self.output_size, self.hidden_size) * math.sqrt(1.0/self.hidden_size) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
-        self.b2 = np.zeros((self.output_size, 1))
+        self.W1 = np.random.randn(self.hidden_size1, self.input_size) * math.sqrt(1.0/self.input_size) #np.zeros(self.hidden_size, self.input_size) #np.random.randn(self.hidden_size, self.input_size) * 0.01 #Haven't done anything interesting in initialization
+        self.b1 = np.zeros((self.hidden_size1, 1))
+        self.W2 = np.random.randn(self.hidden_size2, self.hidden_size1) * math.sqrt(1.0/self.hidden_size1) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b2 = np.zeros((self.hidden_size2, 1))
+        self.W3 = np.random.randn(self.output_size, self.hidden_size2) * math.sqrt(1.0/self.hidden_size2) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b3 = np.zeros((self.output_size, 1))
     
     #Activation & Loss Functions
     def sigmoid(self, x):
@@ -86,14 +92,20 @@ class NN:
         #else:
         A2 = self.sigmoid(Z2)
         #self.A2 = self.relu(self.Z2)
+        
+        Z3 = np.matmul(self.W3, A2) + self.b3
+        
+        A3 = self.sigmoid(Z3)
 
         if test == False:
             self.Z1 = Z1
             self.A1 = A1
             self.Z2 = Z2
             self.A2 = A2
+            self.Z3 = Z3
+            self.A3 = A3
         
-        return A2
+        return A3
 
     
     # backward propagation
@@ -115,16 +127,19 @@ class NN:
         #print(self.A2.shape)
        
         if self.model_type == 1:
-            dA2 = (self.A2 - y) #sus
+            dA3 = (self.A3 - y) #sus
         else:
-            dA2 = - (y/(self.A2)+1e-15) + ((1-y)/((1-self.A2)+1e-15)) #This is correct
+            dA3 = - (y/(self.A3)+1e-15) + ((1-y)/((1-self.A3)+1e-15)) #This is correct
 
         #print('dA2 shape: ', dA2.shape)
     
         # compute the derivative of the activation function of the output layer
         #dZ2 = dA2 * self.d_relu(self.Z2)
+        dZ3 = dA3 * (self.A3 * (1-self.A3))
+        
 
         #dZ2 = dA2 * self.d_sigmoid(self.Z2)
+        dA2 = np.dot(self.W3.T, dZ3)
 
         dZ2 = dA2 * (self.A2 * (1-self.A2)) #This should be correct
         #print('dZ2 shape: ', dZ2.shape)
@@ -160,13 +175,18 @@ class NN:
         self.b1 = self.b1 - self.lr * self.db1
         self.W2 = self.W2 - self.lr * self.dW2
         self.b2 = self.b2 - self.lr * self.db2
+        self.W3 = self.W3 - self.lr * self.dW3
+        self.b3 = self.b3 - self.lr * self.b3
         
     
     def zero_grad(self):
         self.dW1 = 0
         self.dW2 = 0
+        self.dW3 = 0
         self.db1 = 0 
         self.db2 = 0
+        self.db3 = 0
+        
     
     # train the neural network
 
@@ -226,8 +246,8 @@ class NN:
 
             
 
-            self.train_accuracies.append(self.acc_score(y_batch, self.A2))
-            loss = self.cross_entropy_loss(self.A2, y_batch)
+            self.train_accuracies.append(self.acc_score(y_batch, self.A3))
+            loss = self.cross_entropy_loss(self.A3, y_batch)
             # if self.model_type == 1:
             #     loss = self.cross_entropy_loss(self.A2, y_batch)
             #     #loss = self.cross_entropy_loss(self.predict(x_batch), y_batch)
@@ -253,23 +273,26 @@ class NN:
             self.test_accuracies.append(self.acc_score(y_test_batch, self.predict(x_test_batch)))
 
             test_loss = self.cross_entropy_loss(self.forward_propagation(x_test_batch, True), y_test_batch)
-            # if self.model_type == 1:
-            #     #test_loss = self.cross_entropy_loss(self.predict(x_batch), y_batch) #CHANGE BACK
-            #     test_loss = self.cross_entropy_loss(self.A2, y_test_batch)
-            # else:
-            #     #test_loss = self.binary_cross_entropy_loss(self.predict(x_batch), y_batch) #CHANGE BACK
-            #     test_loss = self.binary_cross_entropy_loss(self.A2, y_test_batch)
+            
 
-            self.test_losses.append(test_loss)
-            self.train_losses.append(loss)
+            self.test_losses_smooth.append(test_loss)
+            self.train_losses_smooth.append(loss)
 
             if i % 10 == 0:
                 
                 # self.predict(x_test_batch)
                 #test_loss = self.binary_cross_entropy_loss(self.predict(X_test), y_test.T)
                 #print(f"iteration {i}: Total train loss = {loss}")
-                print(f"iteration {i}: Total train loss = {loss}, total test loss = {test_loss}")
+                loss_smooth = np.mean(np.asarray(self.train_losses_smooth))
+                test_loss_smooth = np.mean(np.asarray(self.test_losses_smooth))
+
+                self.test_losses.append(test_loss_smooth)
+                self.train_losses.append(loss_smooth)
+
+                print(f"iteration {i}: Total train loss = {loss_smooth}, total test loss = {test_loss_smooth}")
                 # print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
+                self.test_losses_smooth = []
+                self.train_losses_smooth = []
                 
 
             #print(self.A2)
@@ -279,15 +302,15 @@ class NN:
     # predict the labels for new data
     def predict(self, X):
         if self.model_type == 1:
-            A2 = self.forward_propagation(X, True)
+            A3 = self.forward_propagation(X, True)
             pred = np.zeros((X.shape[0], 5))
-            res = np.asarray([np.argmax(A2[:,i]) for i in range(A2.shape[1])])
+            res = np.asarray([np.argmax(A3[:,i]) for i in range(A3.shape[1])])
             for i in range(len(res)):
                 pred[i, res[i]] =1
             return pred.T
         else:
-            A2 = self.forward_propagation(X, True)
-            predictions = (A2 > 0.5).astype(int)
+            A3 = self.forward_propagation(X, True)
+            predictions = (A3 > 0.5).astype(int)
             return predictions
 
     def plotLoss(self):
@@ -313,13 +336,6 @@ class NN:
 
 
 def clean_data(dataset, train_split, model_type):
-    #print(dataset.shape)
-    #dataset = dataset.T
-    #print(dataset.shape)
-    #np.random.shuffle(dataset)
-    #print(dataset.shape)
-    #dataset = dataset.T
-    #print(dataset.shape)
 
     boundary = int(math.ceil(dataset.shape[0]*train_split))
 
@@ -391,7 +407,7 @@ def model1(train_split, real_data):
         X_train[:,0] = X_train[:,0] / (30*30)
         X_test[:,0] = X_test[:,0] / (30*30)
         in_size = (len(dataset[0,1])*2)+1
-        nn = NN(in_size, 300, 5, 0.01, 1000, 53, model_type)
+        nn = NN(in_size, 600, 300, 5, 0.5, 1000, 53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
@@ -411,7 +427,7 @@ def model1(train_split, real_data):
             else:
                 y_test[i,1] = 1
         
-        nn = NN(1, 10, 5, .1, 1000, 53, model_type)
+        nn = NN(1, 20, 10, 5, .1 ,1000, 53, model_type)
 
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
@@ -430,7 +446,7 @@ def model2(train_split, real_data):
 
         y_train = np.squeeze(y_train)
         y_test = np.squeeze(y_test)
-        nn = NN(in_size, 300, 1, .1, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
+        nn = NN(in_size, 600, 100, 1, .1, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5
@@ -441,7 +457,7 @@ def model2(train_split, real_data):
         y_train = y_train.reshape(-1, 1)
         print(y_test.shape)
         print(y_train.shape)
-        nn = NN(5, 20, 1, .1, 1000, 53, model_type)
+        nn = NN(5, 20,10, 1, .1, 1000, 53, model_type)
         
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
@@ -715,10 +731,10 @@ def compareBots(model):
     
 if __name__ == "__main__":
     #runSimulate()
-    #nn = model1(train_split=0.7, real_data = True)
+    nn = model1(train_split=0.7, real_data = True)
     #nn = model1(train_split=0.7, real_data = False)
     
-    nn = model2(train_split=0.7, real_data = True)
+    #nn = model2(train_split=0.7, real_data = True)
     #nn = model2(train_split=0.7,real_data = False)
     #compareBots(nn)
     
