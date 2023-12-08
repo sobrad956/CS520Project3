@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from ship import Ship
 from alien import Alien
 from bot import Bot
+import pickle
+
 
 
 class NN:
@@ -28,10 +30,9 @@ class NN:
 
     # initialize weights and biases
     def initialize_parameters(self):
-        self.W1 = np.random.randn(self.hidden_size, self.input_size) * 0.01 #Haven't done anything interesting in initialization
-        
+        self.W1 = np.random.randn(self.hidden_size, self.input_size) * math.sqrt(1.0/self.input_size) #np.zeros(self.hidden_size, self.input_size) #np.random.randn(self.hidden_size, self.input_size) * 0.01 #Haven't done anything interesting in initialization
         self.b1 = np.zeros((self.hidden_size, 1))
-        self.W2 = np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.W2 = np.random.randn(self.output_size, self.hidden_size) * math.sqrt(1.0/self.hidden_size) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
         self.b2 = np.zeros((self.output_size, 1))
     
     #Activation & Loss Functions
@@ -171,12 +172,25 @@ class NN:
 
 
     def acc_score(self, y_actual, y_pred):
-        res = np.argmax(y_pred, axis=0)
-        acc = 0
-        for i in range(len(res)):
-            if y_actual[res[i],i] == 1:
-                acc += 1.0
-        acc = acc/y_pred.shape[1]
+        if self.model_type == 1:
+            res = np.argmax(y_pred, axis=0)
+            acc = 0
+            for i in range(len(res)):
+                if y_actual[res[i],i] == 1:
+                    acc += 1.0
+            acc = acc/y_pred.shape[1]
+        else:
+            res = y_pred > 0.5
+            acc = 0
+            #print(len(res))
+            for i in range(res.shape[1]):
+                #print("y_act", y_actual.shape)
+                #print("res", res.shape)
+                #print(y_actual[i] == res.T[i])
+                if y_actual.T[i] == res.T[i]:
+                    acc += 1.0
+            acc = acc/y_pred.shape[1]
+            #print(acc)
         return acc
 
     def train(self, X, y, X_test, y_test):
@@ -213,12 +227,13 @@ class NN:
             
 
             self.train_accuracies.append(self.acc_score(y_batch, self.A2))
-
-            if self.model_type == 1:
-                loss = self.cross_entropy_loss(self.A2, y_batch)
-            else:
-                #loss = self.binary_cross_entropy_loss(self.predict(X), y.T)
-                loss = self.binary_cross_entropy_loss(self.A2, y_batch)
+            loss = self.cross_entropy_loss(self.A2, y_batch)
+            # if self.model_type == 1:
+            #     loss = self.cross_entropy_loss(self.A2, y_batch)
+            #     #loss = self.cross_entropy_loss(self.predict(x_batch), y_batch)
+            # else:
+            #     #loss = self.binary_cross_entropy_loss(self.A2, y_batch)
+            #     #loss = self.binary_cross_entropy_loss(self.predict(x_batch), y_batch)
         
             # backward propagation
             #print("before back prob")
@@ -237,10 +252,13 @@ class NN:
             #print("before predict")
             self.test_accuracies.append(self.acc_score(y_test_batch, self.predict(x_test_batch)))
 
-            if self.model_type == 1:
-                    test_loss = self.cross_entropy_loss(self.predict(x_test_batch), y_test_batch)
-            else:
-                test_loss = self.binary_cross_entropy_loss(self.predict(x_test_batch), y_test_batch)
+            test_loss = self.cross_entropy_loss(self.forward_propagation(x_test_batch, True), y_test_batch)
+            # if self.model_type == 1:
+            #     #test_loss = self.cross_entropy_loss(self.predict(x_batch), y_batch) #CHANGE BACK
+            #     test_loss = self.cross_entropy_loss(self.A2, y_test_batch)
+            # else:
+            #     #test_loss = self.binary_cross_entropy_loss(self.predict(x_batch), y_batch) #CHANGE BACK
+            #     test_loss = self.binary_cross_entropy_loss(self.A2, y_test_batch)
 
             self.test_losses.append(test_loss)
             self.train_losses.append(loss)
@@ -345,6 +363,7 @@ def clean_data(dataset, train_split, model_type):
     if model_type == 1:
         y_train = np.concatenate(y_train[:,0]).reshape(X_train.shape[0], 5)
     else:
+        #print(y_train)
         y_train = y_train[:,0].reshape(X_train.shape[0], 1)
     print(y_train.shape)
 
@@ -362,65 +381,72 @@ def clean_data(dataset, train_split, model_type):
     return(X_train, y_train, X_test, y_test)
 
 
-def model1(train_split):
+def model1(train_split, real_data):
     model_type = 1
     dataset = np.load('dataframe1.npy', allow_pickle=True)
-    X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
-    X_train[:,0] = X_train[:,0] / (30*30)
-    X_test[:,0] = X_test[:,0] / (30*30)
     
-    # X_train = np.random.randn(59042, 1) # matrix of random x data
-    # y_train = np.zeros((59042, 5))
-    # for i in range(59042):
-    #     if X_train[i] > 0.5:
-    #         y_train[i,0] = 1 
-    #     else:
-    #         y_train[i,1] = 1 
-    # #y_train = X_train[:,1] > 0.5
+    if real_data:
+        
+        X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+        X_train[:,0] = X_train[:,0] / (30*30)
+        X_test[:,0] = X_test[:,0] / (30*30)
+        in_size = (len(dataset[0,1])*2)+1
+        nn = NN(in_size, 300, 5, 0.01, 1000, 53, model_type)
+    else:
+        X_train = np.random.randn(59042, 1) # matrix of random x data
+        y_train = np.zeros((59042, 5))
+        for i in range(59042):
+            if X_train[i] > 0.5:
+                y_train[i,0] = 1 
+            else:
+                y_train[i,1] = 1 
+        #y_train = X_train[:,1] > 0.5
 
-    # X_test = np.random.randn( 25303, 1) # matrix of random x data
-    
-    # y_test = np.zeros((25303, 5))
-    # for i in range(25303):
-    #     if X_test[i] > 0.5:
-    #         y_test[i,0] = 1 
-    #     else:
-    #         y_test[i,1] = 1
+        X_test = np.random.randn( 25303, 1) # matrix of random x data
+        
+        y_test = np.zeros((25303, 5))
+        for i in range(25303):
+            if X_test[i] > 0.5:
+                y_test[i,0] = 1 
+            else:
+                y_test[i,1] = 1
+        
+        nn = NN(1, 10, 5, .1, 1000, 53, model_type)
 
-    nn = NN(1253, 300, 5, 0.01, 1000, 53, model_type)
-    #nn = NN(1, 10, 5, .1, 1000, 53, model_type)
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
     nn.plotAcc()
+    return nn
 
-def model2(train_split):
+def model2(train_split, real_data):
     model_type = 2
     dataset = np.load('dataframe1.npy', allow_pickle=True)
-    X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
-    X_train[:,0] = X_train[:,0] / (30*30)
-    X_test[:,0] = X_test[:,0] / (30*30)
     
+    if real_data:
+        X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+        X_train[:,0] = X_train[:,0] / (30*30)
+        X_test[:,0] = X_test[:,0] / (30*30)
+        in_size = (len(dataset[0,1])*2)+1
 
-    #print(X_train.shape) #(59042, 1253)
-    #print(X_test.shape) #(25303, 1253)
+        y_train = np.squeeze(y_train)
+        y_test = np.squeeze(y_test)
+        nn = NN(in_size, 300, 1, .1, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
+    else:
+        X_train = np.random.randn(59042, 5) # matrix of random x data
+        y_train = X_train[:,1] > 0.5
 
-
-
-    #true_weights = np.random.randn( 1, 2 )
-    # X_train = np.random.randn(59042, 5) # matrix of random x data
-    # y_train = X_train[:,1] > 0.5
-
-    # X_test = np.random.randn( 25303, 5) # matrix of random x data
-    # y_test = X_test[:,1] > 0.5
-
-    #print(x_train.shape)
-    #print(y_train.shape)
-
-    nn = NN(1253, 300, 1, .1, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
-    #nn = NN(5, 20, 1, .1, 1000, 53, model_type)
+        X_test = np.random.randn( 25303, 5) # matrix of random x data
+        y_test = X_test[:,1] > 0.5
+        y_test = y_test.reshape(-1, 1)
+        y_train = y_train.reshape(-1, 1)
+        print(y_test.shape)
+        print(y_train.shape)
+        nn = NN(5, 20, 1, .1, 1000, 53, model_type)
+        
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
     nn.plotAcc()
+    return nn
 
 def simulateData(k,boards):
     """This runs the 1 alien, 1 crew member experiments"""
@@ -551,17 +577,149 @@ def runSimulate():
     print("top of main")
     for i in range(1):
         #ship takes in k, D
-        shp = Ship(k, 30)
+        shp = Ship()
         shp.generate_ship()
         print("ship generated")
         boards.append(shp)
     #experiement takes k, boards
+    with open('board.pickle', "wb") as b_file:
+        pickle.dump(boards[0], b_file, pickle.HIGHEST_PROTOCOL)
     np.save('board.npy', boards[0])
     simulateData(k, boards)
 
+
+def compareBots(model):
+    """This runs bot 1 with and without neural network"""
+    numTrials = 2
+    k = 3
+    prob_success = np.zeros((2, numTrials))
+    avg_trial_len = np.zeros((2, numTrials))
+    
+    success_flag = False
+    
+    shp1 = Ship("board.npy")
+    shp2 = Ship("board.npy")
+    alpha = 0.5
+
+    for trial in range(numTrials):
+       
+        i, j = shp1.get_unoccupied_cell()
+        bot1 = Bot(i, j, k, shp1, 1, alpha)
+        bot2 = Bot(i, j, k, shp2, 2, alpha)
+        shp1.bot = bot1
+        shp2.bot = bot2
+
+        start_cells = []
+        i, j = shp1.get_unoccupied_cell()
+        shp1.ship[i][j].add_crew()
+        shp2.ship[i][j].add_crew()
+        start_cells.append(i)
+        start_cells.append(j)
+
+        i, j = shp1.get_unoccupied_alien_cell(k)
+        alien1 = Alien(i, j, shp1)
+        alien2 = Alien(i, j, shp2)
+
+        shp1.distances_from_crew()
+        shp2.distances_from_crew()
+        # print("Calculated distances")
+        shp1.init_crew_prob_one()
+        shp2.init_crew_prob_one()
+                    
+        shp1.init_alien_prob_one()
+        shp2.init_alien_prob_one()
+
+        
+        print('Trial:', trial)
+
+        #Run bot1
+        T = 0
+        flag = True
+        while flag:
+
+            bot1.bot1_move()
+            i = bot1.row
+            j = bot1.col
+
+            if shp1.ship[i][j].contains_alien():
+                print(f"Dead: {T}")
+                avg_trial_len[0][trial] += T / (numTrials)
+                flag = False
+                break
+            if shp1.ship[i][j].contains_crew():
+                print(f"Saved: {T}")
+                prob_success[0][trial] += 1 / numTrials
+                avg_trial_len[0][trial] += T / (numTrials)
+                shp1.ship[i][j].remove_crew()
+                flag = False
+                break
+            shp1.one_one_bot_move_update()
+            if alien1.move():
+                print(f"Dead: {T}")
+                avg_trial_len[0][trial] += T / (numTrials)
+                flag = False
+                break
+            shp1.one_one_alien_move_update()
+            alien_beep = bot1.detect_alien()
+            shp1.one_one_alien_beep_update(alien_beep)
+            crew_beep = bot1.new_detect_crew(start_cells[0], start_cells[1])
+            shp1.one_one_crew_beep_update(crew_beep)
+            T += 1
+        shp1.empty_ship()
+
+
+        #Run bot2
+        T = 0
+        flag = True
+        while flag:
+            
+            # Neural Network powered bot move sequence
+            cur_board_state = bot2.get_cur_state()
+            pred = model.predict(cur_board_state)
+            bot2.nn_bot_move(pred)
+            
+            # MUST RECORD THE MOVE IT TAKES
+            i = bot2.row
+            j = bot2.col
+
+            if shp2.ship[i][j].contains_alien():
+                print(f"Dead: {T}")
+                avg_trial_len[1][trial] += T / (numTrials)
+                flag = False
+                break
+            if shp2.ship[i][j].contains_crew():
+                print(f"Saved: {T}")
+                prob_success[1][trial] += 1 / numTrials
+                avg_trial_len[1][trial] += T / (numTrials)
+                shp2.ship[i][j].remove_crew()
+                flag = False
+                break
+
+            shp2.one_one_bot_move_update()
+            #print("bot move: ", shp.get_crew_probs())
+
+            if alien2.move():
+                print(f"Dead: {T}")
+                flag = False
+                break
+            shp2.one_one_alien_move_update()
+                        
+            alien_beep = bot2.detect_alien()
+            shp2.one_one_alien_beep_update(alien_beep)
+            crew_beep = bot2.new_detect_crew(start_cells[0], start_cells[1])
+            shp2.one_one_crew_beep_update(crew_beep)
+            T += 1
+        shp2.empty_ship()
+    
+
     
 if __name__ == "__main__":
-    runSimulate()
-    #model1(train_split=0.7)
-    #model2(train_split=0.7)
+    #runSimulate()
+    #nn = model1(train_split=0.7, real_data = True)
+    #nn = model1(train_split=0.7, real_data = False)
+    
+    nn = model2(train_split=0.7, real_data = True)
+    #nn = model2(train_split=0.7,real_data = False)
+    #compareBots(nn)
+    
     

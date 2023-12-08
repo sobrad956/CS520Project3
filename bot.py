@@ -94,6 +94,12 @@ class Bot:
             if random.random() < prob:
                 return True
         return False
+    
+    def new_detect_crew(self, row, col):
+        prob = self.get_beep_prob(row, col)
+        if random.random() < prob:
+            return True
+        return False
 
     
     def find_mult_max(self, values):
@@ -195,7 +201,7 @@ class Bot:
     def get_cur_state(self):
         #Returns the current state of the board to be passed into nn.prediction in main
         cur_state = []
-        cur_state.append(self.ship[self.row, self.col].one_d_idx)
+        cur_state.append(self.ship.ship[self.row, self.col].one_d_idx / 900)
 
         ap = self.ship.get_alien_probs()
         cp = self.ship.get_crew_probs()
@@ -208,9 +214,15 @@ class Bot:
         cur_state.append(ap)
         cur_state.append(cp)
         
+        cur_state = np.asarray(cur_state).reshape(-1,1).T
+        print(cur_state.shape)
+        HH = np.hstack((np.concatenate(cur_state[:,1]), np.concatenate(cur_state[:,2]))).reshape(cur_state.shape[0], len(ap)*2)
+        cur_state = np.hstack((cur_state[:,0].reshape(-1, 1), HH))
+        
+        
         return cur_state
     
-    def nn_bot_move(prediction):
+    def nn_bot_move(self, prediction):
         #Move the bot based on the prediction the nn makes based on the current board state
         next_move = np.argmax(prediction)
         

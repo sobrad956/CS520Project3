@@ -6,6 +6,7 @@ import copy
 from itertools import product
 from itertools import combinations, combinations_with_replacement
 import bot
+import pickle
 
 
 class Cell:
@@ -73,20 +74,43 @@ class Cell:
 class Ship:
     """ This class is used to arrange cells in a grid to represent the ship and generate it at time T=0 """
     
-    def __init__(self, k, D):
-        self.D = D  # The dimension of the ship as a square
-        self.ship = np.asarray([[Cell(i, j, self.D) for j in range(self.D)] for i in range(self.D)])  # creates a DxD 2D grid of closed cells
+    def __init__(self, shp_path = None):
+        self.D = 30  # The dimension of the ship as a square
+        if shp_path is None:
+            self.ship = np.asarray([[Cell(i, j, self.D) for j in range(self.D)] for i in range(self.D)])  # creates a DxD 2D grid of closed cells
+        else:
+            try:
+                with open('board.pickle', "rb") as b_file:
+                    ship_import = pickle.load(b_file)
+            except FileNotFoundError:
+                pass
+            self.ship = ship_import.ship
+            #self.ship = np.load(shp_path, allow_pickle=True)[0].ship
+
+        #    print(self.ship.shape)
         self.bot_loc = [-1, -1]  # Stores the initial position of the bot, used to restrict alien generation cells
         self.crew_probs = np.asarray([[0.0 for j in range(self.D)] for i in range(self.D)])  # Stores the probability of a crew being in a cell for the ship
         self.alien_probs = np.asarray([[0.0 for j in range(self.D)] for i in range(self.D)]) # Stores the probability of an alien being in a cell for the ship
-        self.k = k  # Size of detection square radius
+        self.k = 3  # Size of detection square radius
         self.bot = None  # Reference to the bot on a given ship
         self.num_open_cells = None  # Number of open cells in the ship
-        self.open_neighbors = np.asarray([[0.0 for j in range(self.D)] for i in range(self.D)])  # stores the number of cells adjacent to a given cell that are open
+        if shp_path != None:
+            self.open_neighbors = ship_import.open_neighbors
+        else:
+            self.open_neighbors = np.asarray([[0.0 for j in range(self.D)] for i in range(self.D)])  # stores the number of cells adjacent to a given cell that are open
         #self.two_crew_prob = np.asarray([[[[0.0 for j in range(self.D)] for i in range(self.D)] for k in range(self.D)] for l in range(self.D)])  # Stores the probability of a pair of crew being in two cells for the ship
         #self.two_alien_prob = np.asarray([[[[0.0 for j in range(self.D)] for i in range(self.D)] for k in range(self.D)] for l in range(self.D)]) # Stores the probability of a pair of aliens being in two cells for the ship
         self.open_cell_mask = np.asarray([[False for j in range(self.D)] for i in range(self.D)])  # Mask for the location in the ship of all open cells
         #self.neighbor_pair_array = np.asarray([[[[None for j in range(self.D)] for i in range(self.D)] for k in range(self.D)] for l in range(self.D)])  # For a given pair of open cells, stores all the possible pairs of neigboring cells to the input cells
+        if shp_path != None:
+            self.calculate_open_cells()
+            idx = 0
+            for i in range(self.D):
+                for j in range(self.D):
+                    if self.ship[i][j].is_open():
+                        self.ship[i][j].one_d_idx = idx
+                        idx += 1
+
 
     def get_crew_probs(self):
         return self.crew_probs
@@ -269,12 +293,6 @@ class Ship:
             self.ship[i][j].open_cell()  # Open the selected closed neighbor
         self.calculate_open_cells()
 
-        idx = 0
-        for i in range(self.D):
-            for j in range(self.D):
-                if self.ship[i][j].is_open():
-                    self.ship[i][j].one_d_idx = idx
-                    idx += 1
                     
         
 
