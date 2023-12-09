@@ -137,6 +137,9 @@ class NN:
         #dZ2 = dA2 * self.d_relu(self.Z2)
         dZ3 = dA3 * (self.A3 * (1-self.A3))
         
+        self.dW3 = (1/m) * np.dot(dZ3, self.A2.T)
+        self.db3 = (1/m) * np.sum(dZ3, axis=1, keepdims=True)
+        
 
         #dZ2 = dA2 * self.d_sigmoid(self.Z2)
         dA2 = np.dot(self.W3.T, dZ3)
@@ -176,7 +179,7 @@ class NN:
         self.W2 = self.W2 - self.lr * self.dW2
         self.b2 = self.b2 - self.lr * self.db2
         self.W3 = self.W3 - self.lr * self.dW3
-        self.b3 = self.b3 - self.lr * self.b3
+        self.b3 = self.b3 - self.lr * self.db3
         
     
     def zero_grad(self):
@@ -407,7 +410,7 @@ def model1(train_split, real_data):
         X_train[:,0] = X_train[:,0] / (30*30)
         X_test[:,0] = X_test[:,0] / (30*30)
         in_size = (len(dataset[0,1])*2)+1
-        nn = NN(in_size, 600, 300, 5, 0.5, 1000, 53, model_type)
+        nn = NN(in_size, 150, 50, 5, 0.5, 1000, 53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
