@@ -32,6 +32,9 @@ class NN:
         self.test_losses_smooth = []
         self.train_losses_smooth = []
 
+        self.test_acc_smooth = []
+        self.train_acc_smooth = []
+
     # initialize weights and biases
     def initialize_parameters(self):
         self.W1 = np.random.randn(self.hidden_size1, self.input_size) * math.sqrt(1.0/self.input_size) #np.zeros(self.hidden_size, self.input_size) #np.random.randn(self.hidden_size, self.input_size) * 0.01 #Haven't done anything interesting in initialization
@@ -40,6 +43,8 @@ class NN:
         self.b2 = np.zeros((self.hidden_size2, 1))
         self.W3 = np.random.randn(self.output_size, self.hidden_size2) * math.sqrt(1.0/self.hidden_size2) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
         self.b3 = np.zeros((self.output_size, 1))
+        #self.W3 = np.random.randn(self.output_size, self.hidden_size2) * math.sqrt(1.0/self.hidden_size2) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        #self.b3 = np.zeros((self.output_size, 1))
     
     #Activation & Loss Functions
     def sigmoid(self, x):
@@ -62,7 +67,8 @@ class NN:
         return 1.0 * (x > 0)
     
     def softmax(self, x): #For multiclass classification
-        return(np.exp(x)/np.exp(x).sum())
+        #return(np.exp(x)/np.exp(x).sum())
+        return(np.exp(x)/(np.sum(np.exp(x), axis = 0)))
     
     def binary_cross_entropy_loss(self, y_pred, y_true): #For binary classification
         m = y_true.shape[0]
@@ -81,7 +87,7 @@ class NN:
         #print("before layer 1")
         #print(np.min(self.W1))
         Z1 = np.matmul(self.W1, X.T) + self.b1
-        A1 = self.sigmoid(Z1)
+        A1 = self.relu(Z1)
         #self.A1 = self.relu(self.Z1)
     
         # compute the activation of the output layer
@@ -90,12 +96,17 @@ class NN:
         #if self.model_type == 1:
         #   A2 = self.softmax(Z2)
         #else:
-        A2 = self.sigmoid(Z2)
+        A2 = self.relu(Z2)
         #self.A2 = self.relu(self.Z2)
         
         Z3 = np.matmul(self.W3, A2) + self.b3
         
-        A3 = self.sigmoid(Z3)
+        #A3 = self.sigmoid(Z3)
+        if self.model_type == 2:
+            A3 = self.sigmoid(Z3)
+        else:
+            A3 = self.softmax(Z3)
+
 
         if test == False:
             self.Z1 = Z1
@@ -127,9 +138,14 @@ class NN:
         #print(self.A2.shape)
        
         if self.model_type == 1:
-            dA3 = (self.A3 - y) #sus
+            dA3 = ((self.A3) - y)
         else:
-            dA3 = - (y/(self.A3)+1e-15) + ((1-y)/((1-self.A3)+1e-15)) #This is correct
+            #dA3 = (self.A3 * (1-self.A3))
+            dA3 = - (y/(self.A3)+1e-15) + ((1-y)/((1-self.A3)+1e-15))
+        #if self.model_type == 1:
+        #    dA3 = (self.softmax(self.A3) - y) #sus
+        #else:
+        #    dA3 = - (y/(self.A3)+1e-15) + ((1-y)/((1-self.A3)+1e-15)) #This is correct
 
         #print('dA2 shape: ', dA2.shape)
     
@@ -141,7 +157,7 @@ class NN:
         #dZ2 = dA2 * self.d_sigmoid(self.Z2)
         dA2 = np.dot(self.W3.T, dZ3)
 
-        dZ2 = dA2 * (self.A2 * (1-self.A2)) #This should be correct
+        dZ2 = dA2 * self.d_relu(self.A2) #(self.A2 * (1-self.A2)) #This should be correct
         #print('dZ2 shape: ', dZ2.shape)
         #print('Z2 shape: ', self.Z2.shape)
     
@@ -159,7 +175,9 @@ class NN:
         #dZ1 = dA1 * self.d_relu(self.Z1)
 
         
-        dZ1 = dA1 * (self.A1 * (1-self.A1))
+        dZ1 = dA1 * self.d_relu(self.A1)
+            
+            #(self.A1 * (1-self.A1))
         
         # print("dz1")
         # print(np.min(dZ1))
@@ -193,6 +211,7 @@ class NN:
 
     def acc_score(self, y_actual, y_pred):
         if self.model_type == 1:
+            #y_pred = self.softmax(y_pred)
             res = np.argmax(y_pred, axis=0)
             acc = 0
             for i in range(len(res)):
@@ -404,9 +423,59 @@ def model1(train_split, real_data):
     if real_data:
         
         X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+
+        # with open('X_train.pickle', "wb") as b_file:
+        #     pickle.dump(X_train, b_file, pickle.HIGHEST_PROTOCOL)
+
+        # with open('X_test.pickle', "wb") as b_file:
+        #     pickle.dump(X_test, b_file, pickle.HIGHEST_PROTOCOL)
+
+        # with open('y_train.pickle', "wb") as b_file:
+        #     pickle.dump(y_train, b_file, pickle.HIGHEST_PROTOCOL)
+
+        # with open('y_test.pickle', "wb") as b_file:
+        #     pickle.dump(y_test, b_file, pickle.HIGHEST_PROTOCOL)
+
+
+        
+
+
         X_train[:,0] = X_train[:,0] / (30*30)
         X_test[:,0] = X_test[:,0] / (30*30)
         in_size = (len(dataset[0,1])*2)+1
+
+
+        # temp = X_train.shape[0]
+        # X = np.vstack((X_train,X_test))
+        # X = X.astype(float)
+        # print("here")
+        # X = (X - X.mean(axis = 0)) / X.std(axis = 0)
+        # X = X.astype(float)
+        # print('hi')
+
+        # covariance_matrix = np.cov(X, ddof = 1, rowvar = False)
+        # eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+        # order_of_importance = np.argsort(eigenvalues)[::-1]
+        # sorted_eigenvalues = eigenvalues[order_of_importance]
+        # sorted_eigenvectors = eigenvectors[:,order_of_importance]
+
+        # explained_variance = sorted_eigenvalues / np.sum(sorted_eigenvalues)
+        # k = 200 # select the number of principal components
+        # reduced_data = np.matmul(X, sorted_eigenvectors[:,:k])
+        # total_explained_variance = sum(explained_variance[:k])
+        # print(total_explained_variance)
+
+        # X_train = reduced_data[:temp,]
+        # X_test = reduced_data[temp:,]
+
+        # print(X_train.shape)
+        # print(X_test.shape)
+
+        # in_size = k
+
+
+
+
         nn = NN(in_size, 600, 300, 5, 0.5, 1000, 53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
@@ -440,12 +509,60 @@ def model2(train_split, real_data):
     
     if real_data:
         X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+
+
+        # with open('X_train.pickle', "wb") as b_file:
+        #     pickle.dump(X_train, b_file, pickle.HIGHEST_PROTOCOL)
+
+        # with open('X_test.pickle', "wb") as b_file:
+        #     pickle.dump(X_test, b_file, pickle.HIGHEST_PROTOCOL)
+
+        # with open('y_train.pickle', "wb") as b_file:
+        #     pickle.dump(y_train, b_file, pickle.HIGHEST_PROTOCOL)
+
+        # with open('y_test.pickle', "wb") as b_file:
+        #     pickle.dump(y_test, b_file, pickle.HIGHEST_PROTOCOL)
+
+
+
+
         X_train[:,0] = X_train[:,0] / (30*30)
         X_test[:,0] = X_test[:,0] / (30*30)
         in_size = (len(dataset[0,1])*2)+1
 
         y_train = np.squeeze(y_train)
         y_test = np.squeeze(y_test)
+
+
+        # temp = X_train.shape[0]
+        # X = np.vstack((X_train,X_test))
+        # X = X.astype(float)
+        # print("here")
+        # X = (X - X.mean(axis = 0)) / X.std(axis = 0)
+        # X = X.astype(float)
+        # print('hi')
+
+        # covariance_matrix = np.cov(X, ddof = 1, rowvar = False)
+        # eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+        # order_of_importance = np.argsort(eigenvalues)[::-1]
+        # sorted_eigenvalues = eigenvalues[order_of_importance]
+        # sorted_eigenvectors = eigenvectors[:,order_of_importance]
+
+        # explained_variance = sorted_eigenvalues / np.sum(sorted_eigenvalues)
+        # k = 50 # select the number of principal components
+        # reduced_data = np.matmul(X, sorted_eigenvectors[:,:k])
+        # total_explained_variance = sum(explained_variance[:k])
+        # print(total_explained_variance)
+
+        # X_train = reduced_data[:temp,]
+        # X_test = reduced_data[temp:,]
+
+        # print(X_train.shape)
+        # print(X_test.shape)
+
+        # in_size = 5
+
+
         nn = NN(in_size, 600, 100, 1, .1, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
@@ -457,7 +574,39 @@ def model2(train_split, real_data):
         y_train = y_train.reshape(-1, 1)
         print(y_test.shape)
         print(y_train.shape)
-        nn = NN(5, 20,10, 1, .1, 1000, 53, model_type)
+
+
+        # temp = X_train.shape[0]
+        # X = np.vstack((X_train,X_test))
+        # X = X.astype(float)
+        # print("here")
+        # X = (X - X.mean(axis = 0)) / X.std(axis = 0)
+        # X = X.astype(float)
+        # print('hi')
+
+        # covariance_matrix = np.cov(X, ddof = 1, rowvar = False)
+        # eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+        # order_of_importance = np.argsort(eigenvalues)[::-1]
+        # sorted_eigenvalues = eigenvalues[order_of_importance]
+        # sorted_eigenvectors = eigenvectors[:,order_of_importance]
+
+        # explained_variance = sorted_eigenvalues / np.sum(sorted_eigenvalues)
+        # k = 2 # select the number of principal components
+        # reduced_data = np.matmul(X, sorted_eigenvectors[:,:k])
+        # total_explained_variance = sum(explained_variance[:k])
+        # print(total_explained_variance)
+
+        # X_train = reduced_data[:temp,]
+        # X_test = reduced_data[temp:,]
+
+        # print(X_train.shape)
+        # print(X_test.shape)
+
+        in_size = 5
+
+
+
+        nn = NN(in_size, 20,10, 1, .1, 1000, 53, model_type)
         
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
@@ -731,11 +880,11 @@ def compareBots(model):
     
 if __name__ == "__main__":
     #runSimulate()
-    nn = model1(train_split=0.7, real_data = True)
+    #nn = model1(train_split=0.7, real_data = True)
     #nn = model1(train_split=0.7, real_data = False)
     
     #nn = model2(train_split=0.7, real_data = True)
-    #nn = model2(train_split=0.7,real_data = False)
+    nn = model2(train_split=0.7,real_data = False)
     #compareBots(nn)
     
     
