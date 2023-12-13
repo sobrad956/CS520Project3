@@ -499,10 +499,11 @@ def clean_data(dataset, train_split, model_type):
 
 def model1(train_split, real_data):
     model_type = 1
-    dataset = np.load('dataframe.npy', allow_pickle=True)
-    dataset = pd.DataFrame(dataset)
-    dataset = dataset.fillna(0.0)
-    dataset = dataset.to_numpy()
+    dataset = np.load('dataframe1.npy', allow_pickle=True)
+    # dataset = np.load('dataframe.npy', allow_pickle=True)
+    # dataset = pd.DataFrame(dataset)
+    # dataset = dataset.fillna(0.0)
+    # dataset = dataset.to_numpy()
     
     if real_data:
         
