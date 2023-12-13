@@ -7,16 +7,25 @@ import matplotlib.pyplot as plt
 from ship import Ship
 from alien import Alien
 from bot import Bot
-import pickle
+#import pickle
+import pickle5 as pickle
+import pandas as pd
+
 
 
 
 class NN:
-    def __init__(self, input_size, hidden_size1, hidden_size2, output_size, learning_rate, num_epochs, batch_size, model_type):
+    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, hidden_size6, hidden_size7, hidden_size8,  output_size, learning_rate, num_epochs, batch_size, model_type):
         #np.random.seed(0)
         self.input_size = input_size
         self.hidden_size1 = hidden_size1
         self.hidden_size2 = hidden_size2
+        self.hidden_size3 = hidden_size3
+        self.hidden_size4 = hidden_size4
+        self.hidden_size5 = hidden_size5
+        self.hidden_size6 = hidden_size6
+        self.hidden_size7 = hidden_size7
+        self.hidden_size8 = hidden_size8
         self.output_size = output_size
         self.lr = learning_rate  #Haven't done anything smarter than standard SGD here
         self.epochs = num_epochs
@@ -41,10 +50,18 @@ class NN:
         self.b1 = np.zeros((self.hidden_size1, 1))
         self.W2 = np.random.randn(self.hidden_size2, self.hidden_size1) * math.sqrt(1.0/self.hidden_size1) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
         self.b2 = np.zeros((self.hidden_size2, 1))
-        self.W3 = np.random.randn(self.output_size, self.hidden_size2) * math.sqrt(1.0/self.hidden_size2) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
-        self.b3 = np.zeros((self.output_size, 1))
-        #self.W3 = np.random.randn(self.output_size, self.hidden_size2) * math.sqrt(1.0/self.hidden_size2) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
-        #self.b3 = np.zeros((self.output_size, 1))
+        self.W3 = np.random.randn(self.hidden_size3, self.hidden_size2) * math.sqrt(1.0/self.hidden_size2) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b3 = np.zeros((self.hidden_size3, 1))
+        self.W4 = np.random.randn(self.hidden_size4, self.hidden_size3) * math.sqrt(1.0/self.hidden_size3) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b4 = np.zeros((self.hidden_size4, 1))
+        self.W5 = np.random.randn(self.hidden_size5, self.hidden_size4) * math.sqrt(1.0/self.hidden_size4) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b5 = np.zeros((self.hidden_size5, 1))
+        self.W6 = np.random.randn(self.hidden_size6, self.hidden_size5) * math.sqrt(1.0/self.hidden_size5) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b6 = np.zeros((self.hidden_size6, 1))
+        self.W7 = np.random.randn(self.hidden_size7, self.hidden_size6) * math.sqrt(1.0/self.hidden_size6) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b7 = np.zeros((self.hidden_size7, 1))
+        self.W8 = np.random.randn(self.output_size, self.hidden_size7) * math.sqrt(1.0/self.hidden_size7) #np.zeros(self.output_size, self.hidden_size) #np.random.randn(self.output_size, self.hidden_size) * 0.01
+        self.b8 = np.zeros((self.output_size, 1))
     
     #Activation & Loss Functions
     def sigmoid(self, x):
@@ -98,14 +115,30 @@ class NN:
         #else:
         A2 = self.relu(Z2)
         #self.A2 = self.relu(self.Z2)
-        
+
         Z3 = np.matmul(self.W3, A2) + self.b3
+        A3 = self.relu(Z3)
+
+        Z4 = np.matmul(self.W4, A3) + self.b4
+        A4 = self.relu(Z4)
+
+        Z5 = np.matmul(self.W5, A4) + self.b5
+        A5 = self.relu(Z5)
+
+        Z6 = np.matmul(self.W6, A5) + self.b6
+        A6 = self.relu(Z6)
+
+        Z7 = np.matmul(self.W7, A6) + self.b7
+        A7 = self.relu(Z7)
+
+        Z8 = np.matmul(self.W8, A7) + self.b8
+    
         
         #A3 = self.sigmoid(Z3)
         if self.model_type == 2:
-            A3 = self.sigmoid(Z3)
+            A8 = self.sigmoid(Z8)
         else:
-            A3 = self.softmax(Z3)
+            A8 = self.softmax(Z8)
 
 
         if test == False:
@@ -115,8 +148,19 @@ class NN:
             self.A2 = A2
             self.Z3 = Z3
             self.A3 = A3
+
+            self.Z4 = Z4
+            self.A4 = A4
+            self.Z5 = Z5
+            self.A5 = A5
+            self.Z6 = Z6
+            self.A6 = A6
+            self.Z7 = Z7
+            self.A7 = A7
+            self.Z8 = Z8
+            self.A8 = A8
         
-        return A3
+        return A8
 
     
     # backward propagation
@@ -138,10 +182,10 @@ class NN:
         #print(self.A2.shape)
        
         if self.model_type == 1:
-            dA3 = ((self.A3) - y)
+            dA8 = ((self.A8) - y)
         else:
             #dA3 = (self.A3 * (1-self.A3))
-            dA3 = - (y/(self.A3)+1e-15) + ((1-y)/((1-self.A3)+1e-15))
+            dA8 = - (y/(self.A8)+1e-15) + ((1-y)/((1-self.A8)+1e-15))
         #if self.model_type == 1:
         #    dA3 = (self.softmax(self.A3) - y) #sus
         #else:
@@ -151,23 +195,41 @@ class NN:
     
         # compute the derivative of the activation function of the output layer
         #dZ2 = dA2 * self.d_relu(self.Z2)
-        dZ3 = dA3 * (self.A3 * (1-self.A3))
+        dZ8 = dA8 * (self.A8 * (1-self.A8))
+        self.dW8 = (1/m) * np.matmul(dZ8, self.A7.T)
+        self.db8 = (1/m) * np.sum(dZ8, axis=1, keepdims=True)
+
+        dA7 = np.dot(self.W8.T, dZ8)
+        dZ7 = dA7 * self.d_relu(self.A7)
+        self.dW7 = (1/m) * np.matmul(dZ7, self.A6.T)
+        self.db7 = (1/m) * np.sum(dZ7, axis=1, keepdims=True)
         
+        dA6 = np.dot(self.W7.T, dZ7)
+        dZ6 = dA6 * self.d_relu(self.A6)
+        self.dW6 = (1/m) * np.matmul(dZ6, self.A5.T)
+        self.db6 = (1/m) * np.sum(dZ6, axis=1, keepdims=True)
 
-        #dZ2 = dA2 * self.d_sigmoid(self.Z2)
+        dA5 = np.dot(self.W6.T, dZ6)
+        dZ5 = dA5 * self.d_relu(self.A5)
+        self.dW5 = (1/m) * np.matmul(dZ5, self.A4.T)
+        self.db5 = (1/m) * np.sum(dZ5, axis=1, keepdims=True)
+
+        dA4 = np.dot(self.W5.T, dZ5)
+        dZ4 = dA4 * self.d_relu(self.A4)
+        self.dW4 = (1/m) * np.matmul(dZ4, self.A3.T)
+        self.db4 = (1/m) * np.sum(dZ4, axis=1, keepdims=True)
+
+        dA3 = np.dot(self.W4.T, dZ4)
+        dZ3 = dA3 * self.d_relu(self.A3)
+        self.dW3 = (1/m) * np.matmul(dZ3, self.A2.T)
+        self.db3 = (1/m) * np.sum(dZ3, axis=1, keepdims=True)
+
         dA2 = np.dot(self.W3.T, dZ3)
-
         dZ2 = dA2 * self.d_relu(self.A2) #(self.A2 * (1-self.A2)) #This should be correct
-        #print('dZ2 shape: ', dZ2.shape)
-        #print('Z2 shape: ', self.Z2.shape)
-    
         # compute the derivative of the weights and biases of the output layer
         self.dW2 = (1/m) * np.matmul(dZ2, self.A1.T)
-        #print('dW2 shape: ', self.dW2.shape)
-        #print('W2 shape: ', self.W2.shape)
         self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
-        #print('db2 shape: ', self.db2.shape)
-        #print('b2 shape: ', self.b2.shape)
+ 
     
         # # compute the derivative of the activation function of the hidden layer
         dA1 = np.dot(self.W2.T, dZ2)
@@ -186,7 +248,6 @@ class NN:
         self.dW1 = (1/m) * np.dot(dZ1, X)
         self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
     
-    # update parameters
     def update_parameters(self):
         # update the weights and biases
         self.W1 = self.W1 - self.lr * self.dW1
@@ -195,15 +256,35 @@ class NN:
         self.b2 = self.b2 - self.lr * self.db2
         self.W3 = self.W3 - self.lr * self.dW3
         self.b3 = self.b3 - self.lr * self.b3
+        self.W4 = self.W4 - self.lr * self.dW4
+        self.b4 = self.b4 - self.lr * self.b4
+        self.W5 = self.W5 - self.lr * self.dW5
+        self.b5 = self.b5 - self.lr * self.b5
+        self.W6 = self.W6 - self.lr * self.dW6
+        self.b6 = self.b6 - self.lr * self.b6
+        self.W7 = self.W7 - self.lr * self.dW7
+        self.b7 = self.b7 - self.lr * self.b7
+        self.W8 = self.W8 - self.lr * self.dW8
+        self.b8 = self.b8 - self.lr * self.b8
         
     
     def zero_grad(self):
         self.dW1 = 0
         self.dW2 = 0
         self.dW3 = 0
+        self.dW4 = 0
+        self.dW5 = 0
+        self.dW6 = 0
+        self.dW7 = 0
+        self.dW8 = 0
         self.db1 = 0 
         self.db2 = 0
         self.db3 = 0
+        self.db4 = 0
+        self.db5 = 0
+        self.db6 = 0
+        self.db7 = 0
+        self.db8 = 0
         
     
     # train the neural network
@@ -265,8 +346,8 @@ class NN:
 
             
 
-            self.train_accuracies.append(self.acc_score(y_batch, self.A3))
-            loss = self.cross_entropy_loss(self.A3, y_batch)
+            self.train_accuracies.append(self.acc_score(y_batch, self.A8))
+            loss = self.cross_entropy_loss(self.A8, y_batch)
             # if self.model_type == 1:
             #     loss = self.cross_entropy_loss(self.A2, y_batch)
             #     #loss = self.cross_entropy_loss(self.predict(x_batch), y_batch)
@@ -392,7 +473,7 @@ def clean_data(dataset, train_split, model_type):
     # print()
 
     print("Train Reshaped:")
-    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1252)
+    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1260) #1252)
     X_train = np.hstack((X_train[:,0].reshape(-1, 1), HH))
     print(X_train.shape)
     if model_type == 1:
@@ -405,7 +486,7 @@ def clean_data(dataset, train_split, model_type):
     print()
 
     print("Test Reshaped:")
-    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1252)
+    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1260) #1252)
     X_test = np.hstack((X_test[:,0].reshape(-1, 1), HH))
     print(X_test.shape)
     if model_type == 1:
@@ -418,7 +499,10 @@ def clean_data(dataset, train_split, model_type):
 
 def model1(train_split, real_data):
     model_type = 1
-    dataset = np.load('dataframe1.npy', allow_pickle=True)
+    dataset = np.load('dataframe.npy', allow_pickle=True)
+    dataset = pd.DataFrame(dataset)
+    dataset = dataset.fillna(0.0)
+    dataset = dataset.to_numpy()
     
     if real_data:
         
@@ -437,12 +521,9 @@ def model1(train_split, real_data):
         #     pickle.dump(y_test, b_file, pickle.HIGHEST_PROTOCOL)
 
 
-        
-
-
-        X_train[:,0] = X_train[:,0] / (30*30)
-        X_test[:,0] = X_test[:,0] / (30*30)
-        in_size = (len(dataset[0,1])*2)+1
+        # X_train[:,0] = X_train[:,0] / (30*30)
+        # X_test[:,0] = X_test[:,0] / (30*30)
+        # in_size = (len(dataset[0,1])*2)+1
 
 
         # temp = X_train.shape[0]
@@ -460,7 +541,7 @@ def model1(train_split, real_data):
         # sorted_eigenvectors = eigenvectors[:,order_of_importance]
 
         # explained_variance = sorted_eigenvalues / np.sum(sorted_eigenvalues)
-        # k = 200 # select the number of principal components
+        # k = 30 # select the number of principal components
         # reduced_data = np.matmul(X, sorted_eigenvectors[:,:k])
         # total_explained_variance = sum(explained_variance[:k])
         # print(total_explained_variance)
@@ -473,10 +554,7 @@ def model1(train_split, real_data):
 
         # in_size = k
 
-
-
-
-        nn = NN(in_size, 600, 300, 5, 0.5, 1000, 53, model_type)
+        nn = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1, 2000, 67, model_type) #53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
@@ -496,7 +574,8 @@ def model1(train_split, real_data):
             else:
                 y_test[i,1] = 1
         
-        nn = NN(1, 20, 10, 5, .1 ,1000, 53, model_type)
+        #nn = NN(1, 20, 10, 5, .1 ,1000, 53, model_type)
+        nn = NN(1, 10, 9, 8, 7, 6, 5, 4, 3, 5, .01, 1000, 53, model_type)
 
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
@@ -879,12 +958,26 @@ def compareBots(model):
 
     
 if __name__ == "__main__":
+    #x = np.load('Final/board.npy', allow_pickle=True)
+    # open a file, where you stored the pickled data
+    # file = open('Final/board.pickle', 'rb')
+
+    # # dump information to that file
+    # data = pickle.load(file)
+
+    # # close the file
+    # file.close()
+
+    # print(data.print_ship())
+
+
+
     #runSimulate()
-    #nn = model1(train_split=0.7, real_data = True)
+    nn = model1(train_split=0.7, real_data = True)
     #nn = model1(train_split=0.7, real_data = False)
     
     #nn = model2(train_split=0.7, real_data = True)
-    nn = model2(train_split=0.7,real_data = False)
+    #nn = model2(train_split=0.7,real_data = False)
     #compareBots(nn)
     
     
