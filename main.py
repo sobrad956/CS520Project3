@@ -15,7 +15,7 @@ import pickle
 
 
 class NN:
-    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, hidden_size6, hidden_size7, hidden_size8,  output_size, learning_rate, num_epochs, batch_size, model_type, distances_array, real_data):
+    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, hidden_size6, hidden_size7, hidden_size8,  output_size, learning_rate, num_epochs, batch_size, model_type, distances_array, drop_out, real_data):
         #np.random.seed(0)
         self.input_size = input_size
         self.hidden_size1 = hidden_size1
@@ -46,6 +46,7 @@ class NN:
         
         self.distances = distances_array
         self.real = real_data
+        self.drop_out = drop_out #Percent of neurons at each layer to keep activated
 
     # initialize weights and biases
     def initialize_parameters(self):
@@ -108,6 +109,16 @@ class NN:
         #print(np.min(self.W1))
         Z1 = np.matmul(self.W1, X.T) + self.b1
         A1 = self.relu(Z1)
+
+        #dropout
+        if not test:
+            A1shape = A1.shape[0]*A1.shape[1]
+            self.D1 = np.ones(A1shape)
+            self.D1[0:math.floor(self.drop_out * A1shape)] = 1
+            np.random.shuffle(self.D1)
+            self.D1 = self.D1.reshape((A1.shape[0], A1.shape[1]))
+        A1 = np.multiply(self.D1, A1)
+
         #self.A1 = self.relu(self.Z1)
     
         # compute the activation of the output layer
@@ -117,22 +128,69 @@ class NN:
         #   A2 = self.softmax(Z2)
         #else:
         A2 = self.relu(Z2)
-        #self.A2 = self.relu(self.Z2)
+        #dropout
+        if not test:
+            A2shape = A2.shape[0]*A2.shape[1]
+            self.D2 = np.ones(A2shape)
+            self.D2[0:math.floor(self.drop_out * A2shape)] = 1
+            np.random.shuffle(self.D2)
+            self.D2 = self.D2.reshape((A2.shape[0], A2.shape[1]))
+        A2 = np.multiply(self.D2, A2)
 
         Z3 = np.matmul(self.W3, A2) + self.b3
         A3 = self.relu(Z3)
+        #dropout
+        if not test:
+            A3shape = A3.shape[0]*A3.shape[1]
+            self.D3 = np.ones(A3shape)
+            self.D3[0:math.floor(self.drop_out * A3shape)] = 1
+            np.random.shuffle(self.D3)
+            self.D3 = self.D3.reshape((A3.shape[0], A3.shape[1]))
+        A3 = np.multiply(self.D3, A3)
 
         Z4 = np.matmul(self.W4, A3) + self.b4
         A4 = self.relu(Z4)
+        #dropout
+        if not test:
+            A4shape = A4.shape[0]*A4.shape[1]
+            self.D4 = np.ones(A4shape)
+            self.D4[0:math.floor(self.drop_out * A4shape)] = 1
+            np.random.shuffle(self.D4)
+            self.D4 = self.D4.reshape((A4.shape[0], A4.shape[1]))
+        A4 = np.multiply(self.D4, A4)
 
         Z5 = np.matmul(self.W5, A4) + self.b5
         A5 = self.relu(Z5)
+        #dropout
+        if not test:
+            A5shape = A5.shape[0]*A5.shape[1]
+            self.D5 = np.ones(A5shape)
+            self.D5[0:math.floor(self.drop_out * A5shape)] = 1
+            np.random.shuffle(self.D5)
+            self.D5 = self.D5.reshape((A5.shape[0], A5.shape[1]))
+        A5 = np.multiply(self.D5, A5)
 
         Z6 = np.matmul(self.W6, A5) + self.b6
         A6 = self.relu(Z6)
+        #dropout
+        if not test:
+            A6shape = A6.shape[0]*A6.shape[1]
+            self.D6 = np.ones(A6shape)
+            self.D6[0:math.floor(self.drop_out * A6shape)] = 1
+            np.random.shuffle(self.D6)
+            self.D6 = self.D6.reshape((A6.shape[0], A6.shape[1]))
+        A6 = np.multiply(self.D6, A6)
 
         Z7 = np.matmul(self.W7, A6) + self.b7
         A7 = self.relu(Z7)
+        #dropout
+        if not test:
+            A7shape = A7.shape[0]*A7.shape[1]
+            self.D7 = np.ones(A7shape)
+            self.D7[0:math.floor(self.drop_out * A7shape)] = 1
+            np.random.shuffle(self.D7)
+            self.D7 = self.D7.reshape((A7.shape[0], A7.shape[1]))
+        A7 = np.multiply(self.D7, A7)
 
         Z8 = np.matmul(self.W8, A7) + self.b8
     
@@ -204,31 +262,37 @@ class NN:
 
         dA7 = np.dot(self.W8.T, dZ8)
         dZ7 = dA7 * self.d_relu(self.A7)
+        dZ7 = np.multiply(dZ7, self.D7) #DROPOUT
         self.dW7 = (1/m) * np.matmul(dZ7, self.A6.T)
         self.db7 = (1/m) * np.sum(dZ7, axis=1, keepdims=True)
         
         dA6 = np.dot(self.W7.T, dZ7)
         dZ6 = dA6 * self.d_relu(self.A6)
+        dZ6 = np.multiply(dZ6, self.D6) #DROPOUT
         self.dW6 = (1/m) * np.matmul(dZ6, self.A5.T)
         self.db6 = (1/m) * np.sum(dZ6, axis=1, keepdims=True)
 
         dA5 = np.dot(self.W6.T, dZ6)
         dZ5 = dA5 * self.d_relu(self.A5)
+        dZ5 = np.multiply(dZ5, self.D5) #DROPOUT
         self.dW5 = (1/m) * np.matmul(dZ5, self.A4.T)
         self.db5 = (1/m) * np.sum(dZ5, axis=1, keepdims=True)
 
         dA4 = np.dot(self.W5.T, dZ5)
         dZ4 = dA4 * self.d_relu(self.A4)
+        dZ4 = np.multiply(dZ4, self.D4) #DROPOUT
         self.dW4 = (1/m) * np.matmul(dZ4, self.A3.T)
         self.db4 = (1/m) * np.sum(dZ4, axis=1, keepdims=True)
 
         dA3 = np.dot(self.W4.T, dZ4)
         dZ3 = dA3 * self.d_relu(self.A3)
+        dZ3 = np.multiply(dZ3, self.D3) #DROPOUT
         self.dW3 = (1/m) * np.matmul(dZ3, self.A2.T)
         self.db3 = (1/m) * np.sum(dZ3, axis=1, keepdims=True)
 
         dA2 = np.dot(self.W3.T, dZ3)
         dZ2 = dA2 * self.d_relu(self.A2) #(self.A2 * (1-self.A2)) #This should be correct
+        dZ2 = np.multiply(dZ2, self.D2) #DROPOUT
         # compute the derivative of the weights and biases of the output layer
         self.dW2 = (1/m) * np.matmul(dZ2, self.A1.T)
         self.db2 = (1/m) * np.sum(dZ2, axis=1, keepdims=True)
@@ -241,6 +305,7 @@ class NN:
 
         
         dZ1 = dA1 * self.d_relu(self.A1)
+        dZ1 = np.multiply(dZ1, self.D1) #DROPOUT
             
             #(self.A1 * (1-self.A1))
         
@@ -335,16 +400,16 @@ class NN:
             
             if self.real:
                 for elem in x_batch:
-                    #print(elem.shape)
-                    #print(elem[0])
-                    #idx = int(elem[0]*900)
-                    #elem = np.multiply(elem, distances[idx])
-                    pass
+                    print(elem.shape)
+                    print(elem[0])
+                    idx = int(elem[0]*900)
+                    elem = np.multiply(elem, distances[idx])
+                    #pass
                     
                 for elem in x_test_batch:
-                    #idx = int(elem[0]*900)
-                    #elem = np.multiply(elem, distances[idx])
-                    pass
+                    idx = int(elem[0]*900)
+                    elem = np.multiply(elem, distances[idx])
+                    #pass
                 
 
             #x_batch = X
@@ -429,10 +494,10 @@ class NN:
     # predict the labels for new data
     def predict(self, X):
         
-        distances = self.distances
+        #distances = self.distances
         #idx = int(X[0]*900)
-        if self.real:
-            X = np.multiply(X, distances[idx])
+        #if self.real:
+        #    X = np.multiply(X, distances[idx])
         
         
         if self.model_type == 1:
@@ -507,7 +572,7 @@ def clean_data(dataset, train_split, model_type):
     # print()
 
     print("Train Reshaped:")
-    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1260) #1252)
+    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1256) #1260) #1252)
     X_train = np.hstack((X_train[:,0].reshape(-1, 1), HH))
     print(X_train.shape)
     if model_type == 1:
@@ -520,7 +585,7 @@ def clean_data(dataset, train_split, model_type):
     print()
 
     print("Test Reshaped:")
-    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1260) #1252)
+    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1256) #1260) #1252)
     X_test = np.hstack((X_test[:,0].reshape(-1, 1), HH))
     print(X_test.shape)
     if model_type == 1:
@@ -533,7 +598,7 @@ def clean_data(dataset, train_split, model_type):
 
 def model1(distances_array,train_split,   real_data,):
     model_type = 1
-    dataset = np.load('dataframe1.npy', allow_pickle=True)
+    dataset = np.load('dataframe.npy', allow_pickle=True)
     #print(dataset[0])
     # dataset = np.load('dataframe.npy', allow_pickle=True)
     # dataset = pd.DataFrame(dataset)
@@ -590,8 +655,8 @@ def model1(distances_array,train_split,   real_data,):
         # print(X_test.shape)
 
         # in_size = k
-
-        nn = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1*math.sqrt(67), 2000, 67, model_type, distances_array, True) #53, model_type)
+        drop_out = 0.7
+        nn = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1*math.sqrt(67), 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
@@ -612,7 +677,8 @@ def model1(distances_array,train_split,   real_data,):
                 y_test[i,1] = 1
         
         #nn = NN(1, 20, 10, 5, .1 ,1000, 53, model_type)
-        nn = NN(1, 10, 9, 8, 7, 6, 5, 4, 3, 5, .01*math.sqrt(53), 1000, 53, model_type, distances_array, False)
+        drop_out = 0.7
+        nn = NN(1, 10, 9, 8, 7, 6, 5, 4, 3, 5, .01*math.sqrt(53), 1000, 53, model_type, distances_array, drop_out, False)
 
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
@@ -621,7 +687,7 @@ def model1(distances_array,train_split,   real_data,):
 
 def model2(distances_array,train_split,  real_data):
     model_type = 2
-    dataset = np.load('dataframe_small.npy', allow_pickle=True)
+    dataset = np.load('dataframe.npy', allow_pickle=True)
     
     if real_data:
         X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
@@ -677,9 +743,8 @@ def model2(distances_array,train_split,  real_data):
         # print(X_test.shape)
 
         # in_size = 5
-
-
-        nn = NN(in_size, 600, 100, 1, .1*math.sqrt(53), 1000, 53, model_type, distances_array, True) #Batch Size probably not 53 for whole dataset.
+        drop_out = 0.7
+        nn = NN(in_size, 10, 9, 8, 7, 6, 5, 4, 3, 1, .01*math.sqrt(53), 1000, 53, model_type, distances_array, drop_out, True)
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5
@@ -688,8 +753,8 @@ def model2(distances_array,train_split,  real_data):
         y_test = X_test[:,1] > 0.5
         y_test = y_test.reshape(-1, 1)
         y_train = y_train.reshape(-1, 1)
-        print(y_test.shape)
-        print(y_train.shape)
+        #print(y_test.shape)
+        #print(y_train.shape)
 
 
         # temp = X_train.shape[0]
@@ -720,18 +785,51 @@ def model2(distances_array,train_split,  real_data):
 
         in_size = 5
 
-
-
-        nn = NN(in_size, 20,10, 1, .1*math.sqrt(53), 1000, 53, model_type, distances_array, False)
+        drop_out = 0.7
+        nn = NN(in_size, 600, 500, 400, 300, 200, 100, 50, 25, 1, .01, 1000, 53, model_type, distances_array, drop_out, False)
+        
         
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
     nn.plotAcc()
     return nn
 
-#def model3(distances_array,train_split,  real_data):
-#
+def model3(distances_array,train_split,  real_data):
+    return 0
+    model_type = 3
+    dataset = np.load('dataframe.npy', allow_pickle=True)
+    # Simulate initial board states
+    X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+    X_train[:,0] = X_train[:,0] / (30*30)
+    X_test[:,0] = X_test[:,0] / (30*30)
+    in_size = (len(dataset[0,1])*2)+1
 
+    #y_train = np.squeeze(y_train)
+    #y_test = np.squeeze(y_test)
+    
+    # Train model 1 on each board state to get predicted next move based on true success labels
+    nn_actor = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1*math.sqrt(67), 2000, 67, model_type, distances_array, True) #53, model_type)
+    moves = nn_actor.predict(X)
+
+    # Move all the states
+    X = X.transition(moves)
+    # Train model 2 on each board state to predict probability of success
+    nn_critic = NN(in_size, 600, 100, 1, .1*math.sqrt(53), 1000, 53, model_type, distances_array, True)
+    y = nn_critic.predict(X)
+
+    # Repeat:
+    for epoch in num_epochs:
+        # Update model 1 using labels from model 2 instead of actual success labels
+        nn_actor.train()
+        moves = nn_actor.predict(X)
+        # Move all states
+        X = X.transition(moves)
+        # Update model 2 on each board state to predict probability of success again
+        nn_critic.train()
+        y = nn_critic.predict(X)
+    
+    # Run a bot with model 1.
+    bot3 = Bot(nn_actor)
 
 
 def simulateData(k,boards):
@@ -1002,13 +1100,15 @@ if __name__ == "__main__":
     #x = np.load('Final/board.npy', allow_pickle=True)
     # open a file, where you stored the pickled data
 
-    # file = open('board.pickle', 'rb')
-    # shp = pickle.load(file)
+    file = open('board.pickle', 'rb')
+    shp = pickle.load(file)
     
-    # file.close()
-    # shp.open_cell_indices()
-    # shp.open_cell_distances()
-    # distances = shp.get_one_distances()
+    file.close()
+    shp.open_cell_indices()
+    shp.open_cell_distances()
+    #print(shp.print_ship())
+    distances = shp.get_one_distances()
+    print(distances.shape)
     
 
     # # dump information to that file
@@ -1032,9 +1132,9 @@ if __name__ == "__main__":
 
 
 
-    runSimulate()
+    #runSimulate()
     #nn = model1(distances, train_split=0.7, real_data = True)
-    #nn = model1(distances,train_split=0.7,  real_data = False)
+    nn = model1(distances,train_split=0.7,  real_data = False)
     
     #nn = model2(distances,train_split=0.7,  real_data = True)
     #nn = model2(distances,train_split=0.7,  real_data = False)
