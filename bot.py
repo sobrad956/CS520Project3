@@ -215,27 +215,28 @@ class Bot:
         cur_state.append(cp)
         
         cur_state = np.asarray(cur_state).reshape(-1,1).T
-        print(cur_state.shape)
+        #print(cur_state.shape)
         HH = np.hstack((np.concatenate(cur_state[:,1]), np.concatenate(cur_state[:,2]))).reshape(cur_state.shape[0], len(ap)*2)
         cur_state = np.hstack((cur_state[:,0].reshape(-1, 1), HH))
         
-        
+        #print(cur_state.shape)
         return cur_state
     
     def nn_bot_move(self, prediction):
         #Move the bot based on the prediction the nn makes based on the current board state
         next_move = np.argmax(prediction)
+        print("next move", next_move)
         
-        if next_move == 0:
+        if next_move == 0 and self.col != 0:
             self.move_left()
             return 0
-        elif next_move == 1:
+        elif next_move == 1 and self.col != 29:
             self.move_right()
             return 1
-        elif next_move == 2:
+        elif next_move == 2 and self.row != 0:
             self.move_up()
             return 2
-        elif next_move == 3:
+        elif next_move == 3 and self.row != 29:
             self.move_down()
             return 3
         else:

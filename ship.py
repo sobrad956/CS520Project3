@@ -94,6 +94,7 @@ class Ship:
         self.k = 3  # Size of detection square radius
         self.bot = None  # Reference to the bot on a given ship
         self.num_open_cells = None  # Number of open cells in the ship
+        self.one_d_distances = None
         if shp_path != None:
             self.open_neighbors = ship_import.open_neighbors
         else:
@@ -108,8 +109,20 @@ class Ship:
             for i in range(self.D):
                 for j in range(self.D):
                     if self.ship[i][j].is_open():
+                        print("HERE")
                         self.ship[i][j].one_d_idx = idx
+                        
                         idx += 1
+        #self.calculate_positions()
+
+    def calculate_positions(self):
+        self.calculate_open_cells()
+        idx = 0
+        for i in range(self.D):
+            for j in range(self.D):
+                if self.ship[i][j].is_open():
+                    self.ship[i][j].one_d_idx = idx
+                    idx += 1
 
 
     def get_crew_probs(self):
@@ -135,6 +148,8 @@ class Ship:
     
     def get_bot_loc(self):
         return self.bot_loc
+    
+    
 
     def get_sensor_region(self, i, j):
         """ Returns only the cells in the ship that arre within the alien detection sensor region (square of side 2k + 1)"""
@@ -292,6 +307,7 @@ class Ship:
             i, j = random.sample(cell, 1)[0]  # For each dead end, randomly select one closed neighbor
             self.ship[i][j].open_cell()  # Open the selected closed neighbor
         self.calculate_open_cells()
+        self.calculate_positions()
 
                     
         
@@ -490,5 +506,38 @@ class Ship:
         mask = np.asarray([list(map(mask_func, row)) for row in self.ship])
         #mask_trues = np.where(mask==True)
         return mask
+    
+    def open_cell_distances(self):
+        print("here")
+        """Creates the distance "mask" for applying"""
+        open_cells = []
+        for open_i in range(self.D):
+            for open_j in range(self.D):
+                if self.ship[open_i][open_j].is_open():
+                    open_cells.append(self.ship[open_i][open_j])
+                    
+        distances = np.zeros((len(open_cells), 1 + (2*len(open_cells))))
+        
+        
+        for open_cell in open_cells:
+            cur_idx = open_cell.one_d_idx
+            
+            for open_cell2 in open_cells:
+                if open_cell != open_cell2:
+                    
+                    next_idx = open_cell2.one_d_idx
+                    row = open_cell2.row
+                    col = open_cell2.col
+                    
+                    distance = open_cell.distances[row][col]
+                    distances[cur_idx][next_idx+1] = 1 / distance
+                    distances[cur_idx][next_idx+1+len(open_cells)] = 1 / distance
+        
+        self.one_d_distances = distances
+        
+    
+    def get_one_distances(self):
+        print("here2")
+        return self.one_d_distances
         
 
