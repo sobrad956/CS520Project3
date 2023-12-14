@@ -10,6 +10,7 @@ from bot import Bot
 import pickle
 #import pickle5 as pickle
 #import pandas as pd
+import copy
 
 
 
@@ -89,7 +90,7 @@ class NN:
     
     def softmax(self, x): #For multiclass classification
         #return(np.exp(x)/np.exp(x).sum())
-        return(np.exp(x)/(np.sum(np.exp(x), axis = 0)))
+        return(np.exp(x.astype('float'))/(np.sum(np.exp(x.astype('float')), axis = 0)))
     
     def binary_cross_entropy_loss(self, y_pred, y_true): #For binary classification
         m = y_true.shape[0]
@@ -102,13 +103,15 @@ class NN:
         return -(1/m) * np.sum(np.multiply(y_true, np.log(y_pred +1e-15))) #Added small error for divide by zero errors
 
     # forward propagation
-    def forward_propagation(self, X, test = False):    
+    def forward_propagation(self, X, test = False, deploy = False):    
         # compute the activation of the hidden layer
         #print(np.min(X))
         #print("before layer 1")
         #print(np.min(self.W1))
         Z1 = np.matmul(self.W1, X.T) + self.b1
+        #print('Z1:',Z1.shape)
         A1 = self.relu(Z1)
+        #print("A1", A1.shape)
 
         #dropout
         if not test:
@@ -117,13 +120,16 @@ class NN:
             self.D1[0:math.floor(self.drop_out * A1shape)] = 1
             np.random.shuffle(self.D1)
             self.D1 = self.D1.reshape((A1.shape[0], A1.shape[1]))
-        A1 = np.multiply(self.D1, A1)
+        if not deploy:
+            A1 = np.multiply(self.D1, A1)
+        #print("A1,2", A1.shape)
 
         #self.A1 = self.relu(self.Z1)
     
         # compute the activation of the output layer
         #print("before layer 2")
         Z2 = np.matmul(self.W2, A1) + self.b2
+        #print('Z2:',Z2.shape)
         #if self.model_type == 1:
         #   A2 = self.softmax(Z2)
         #else:
@@ -135,9 +141,11 @@ class NN:
             self.D2[0:math.floor(self.drop_out * A2shape)] = 1
             np.random.shuffle(self.D2)
             self.D2 = self.D2.reshape((A2.shape[0], A2.shape[1]))
-        A2 = np.multiply(self.D2, A2)
+        if not deploy:
+            A2 = np.multiply(self.D2, A2)
 
         Z3 = np.matmul(self.W3, A2) + self.b3
+        #print('Z3:',Z3.shape)
         A3 = self.relu(Z3)
         #dropout
         if not test:
@@ -146,9 +154,11 @@ class NN:
             self.D3[0:math.floor(self.drop_out * A3shape)] = 1
             np.random.shuffle(self.D3)
             self.D3 = self.D3.reshape((A3.shape[0], A3.shape[1]))
-        A3 = np.multiply(self.D3, A3)
+        if not deploy:
+            A3 = np.multiply(self.D3, A3)
 
         Z4 = np.matmul(self.W4, A3) + self.b4
+        #print('Z4:',Z4.shape)
         A4 = self.relu(Z4)
         #dropout
         if not test:
@@ -157,9 +167,11 @@ class NN:
             self.D4[0:math.floor(self.drop_out * A4shape)] = 1
             np.random.shuffle(self.D4)
             self.D4 = self.D4.reshape((A4.shape[0], A4.shape[1]))
-        A4 = np.multiply(self.D4, A4)
+        if not deploy:
+            A4 = np.multiply(self.D4, A4)
 
         Z5 = np.matmul(self.W5, A4) + self.b5
+        #print('Z5:',Z5.shape)
         A5 = self.relu(Z5)
         #dropout
         if not test:
@@ -168,9 +180,11 @@ class NN:
             self.D5[0:math.floor(self.drop_out * A5shape)] = 1
             np.random.shuffle(self.D5)
             self.D5 = self.D5.reshape((A5.shape[0], A5.shape[1]))
-        A5 = np.multiply(self.D5, A5)
+        if not deploy:
+            A5 = np.multiply(self.D5, A5)
 
         Z6 = np.matmul(self.W6, A5) + self.b6
+        #print('Z6:',Z6.shape)
         A6 = self.relu(Z6)
         #dropout
         if not test:
@@ -179,9 +193,11 @@ class NN:
             self.D6[0:math.floor(self.drop_out * A6shape)] = 1
             np.random.shuffle(self.D6)
             self.D6 = self.D6.reshape((A6.shape[0], A6.shape[1]))
-        A6 = np.multiply(self.D6, A6)
+        if not deploy:
+            A6 = np.multiply(self.D6, A6)
 
         Z7 = np.matmul(self.W7, A6) + self.b7
+        #print('Z7:',Z7.shape)
         A7 = self.relu(Z7)
         #dropout
         if not test:
@@ -190,7 +206,8 @@ class NN:
             self.D7[0:math.floor(self.drop_out * A7shape)] = 1
             np.random.shuffle(self.D7)
             self.D7 = self.D7.reshape((A7.shape[0], A7.shape[1]))
-        A7 = np.multiply(self.D7, A7)
+        if not deploy:
+            A7 = np.multiply(self.D7, A7)
 
         Z8 = np.matmul(self.W8, A7) + self.b8
     
@@ -199,6 +216,7 @@ class NN:
         if self.model_type == 2:
             A8 = self.sigmoid(Z8)
         else:
+            #print(Z8)
             A8 = self.softmax(Z8)
 
 
@@ -400,8 +418,8 @@ class NN:
             
             if self.real:
                 for elem in x_batch:
-                    print(elem.shape)
-                    print(elem[0])
+                    #print(elem.shape)
+                    #print(elem[0])
                     idx = int(elem[0]*900)
                     elem = np.multiply(elem, distances[idx])
                     #pass
@@ -492,23 +510,28 @@ class NN:
 
     
     # predict the labels for new data
-    def predict(self, X):
+    def predict(self, X, deploy = False):
         
-        #distances = self.distances
-        #idx = int(X[0]*900)
-        #if self.real:
-        #    X = np.multiply(X, distances[idx])
+        distances = self.distances
+
+        
+        #idx = int(X[0])
+        if self.real:
+           for elem in X:
+                idx = int(elem[0]*900)
+                elem = np.multiply(elem, distances[idx])
+                #pass
         
         
         if self.model_type == 1:
-            A3 = self.forward_propagation(X, True)
+            A3 = self.forward_propagation(X, True, deploy)
             pred = np.zeros((X.shape[0], 5))
             res = np.asarray([np.argmax(A3[:,i]) for i in range(A3.shape[1])])
             for i in range(len(res)):
                 pred[i, res[i]] =1
             return pred.T
         else:
-            A3 = self.forward_propagation(X, True)
+            A3 = self.forward_propagation(X, True, deploy)
             predictions = (A3 > 0.5).astype(int)
             return predictions
 
@@ -608,6 +631,11 @@ def model1(distances_array,train_split,   real_data,):
     if real_data:
         
         X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+
+        X_train[:,0] = X_train[:,0] / (30*30)
+        X_test[:,0] = X_test[:,0] / (30*30)
+        in_size = (len(dataset[0,1])*2)+1
+
         #print(X_train[:,0])
 
         # with open('X_train.pickle', "wb") as b_file:
@@ -656,7 +684,7 @@ def model1(distances_array,train_split,   real_data,):
 
         # in_size = k
         drop_out = 0.7
-        nn = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1*math.sqrt(67), 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
+        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
@@ -744,7 +772,7 @@ def model2(distances_array,train_split,  real_data):
 
         # in_size = 5
         drop_out = 0.7
-        nn = NN(in_size, 10, 9, 8, 7, 6, 5, 4, 3, 1, .01*math.sqrt(53), 1000, 53, model_type, distances_array, drop_out, True)
+        nn = NN(in_size, 10, 9, 8, 7, 6, 5, 4, 3, 1, .001, 1000, 53, model_type, distances_array, drop_out, True)
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5
@@ -835,14 +863,25 @@ def model3(distances_array,train_split,  real_data):
 def simulateData(k,boards):
     """This runs the 1 alien, 1 crew member experiments"""
     #numBoards = len(boards)
-    numTrials = 100
+    numTrials = 1000
     #bots = [1]
     success_flag = False
     
     shp = boards[0]
     alpha = 0.5
     data = []
+    data_with_walls = []
+    data_sensor = []
+    data_adjacent = []
+    data_bot_loc = []
+    data_bot_loc_open = []
     labels = []
+
+    board_walls = np.zeros((30, 30))
+    for i in range(30):
+        for j in range(30):
+            if not shp.ship[i,j].is_open():
+                board_walls[i,j] = -1
 
     for trial in range(numTrials):
        
@@ -862,7 +901,7 @@ def simulateData(k,boards):
         shp.distances_from_crew()
         # print("Calculated distances")
         shp.init_crew_prob_one()
-        np.save('init_crew_probs.npy', shp.get_crew_probs())
+        #np.save('init_crew_probs.npy', shp.get_crew_probs())
         # print("init crew prob: ")
         # print(shp.get_crew_probs())
         #print()
@@ -878,20 +917,81 @@ def simulateData(k,boards):
         flag = True
         while flag:
             datarow = []
-            #if T > 40:
-             #   break
+            datarow_walls = []
+            datarow_ds = []
+            datarow_adj = []
+            #if T > 6000:
+            #    print(f"TIMEOUT: {T}")
+            #    labels.append(np.zeros(T+1))
+            #    flag = False
+            #    break
             datarow.append(shp.ship[bot.row, bot.col].one_d_idx)
+            tmp = np.copy(board_walls)
+            tmp[bot.row, bot.col] = 1
+            data_bot_loc.append(tmp) 
+            data_bot_loc_open.append(tmp[shp.open_cell_indices()].flatten())
 
             ap = shp.get_alien_probs()
             cp = shp.get_crew_probs()
 
+            datarow_walls.append(ap)
+            datarow_walls.append(cp)
+            data_with_walls.append(datarow_walls)
+
             
 
-            ap = ap[shp.open_cell_indices()].flatten()
-            cp = cp[shp.open_cell_indices()].flatten()
+            ap1 = ap[shp.open_cell_indices()].flatten()
+            cp1 = cp[shp.open_cell_indices()].flatten()
 
-            datarow.append(ap)
-            datarow.append(cp)
+            datarow.append(ap1)
+            datarow.append(cp1)
+
+            r, c = shp.get_det_sq_indicies()
+            ap2 = ap[r, c].flatten()
+            cp2 = cp[r, c].flatten()
+
+            datarow_ds.append(ap2)
+            datarow_ds.append(cp2)
+            data_sensor.append(datarow_ds)
+
+            ap_vector = np.ones(4)
+            cp_vector = np.zeros(4)
+
+            if bot.col > 0:
+                if shp.ship[bot.row, bot.col-1].is_open():
+                    ap_vector[0] = ap[bot.row, bot.col-1]
+                    cp_vector[0] = cp[bot.row, bot.col-1]
+                else:
+                    ap_vector[0] = 1.0
+                    cp_vector[0] = 0.0
+            if bot.col < 29:
+                if shp.ship[bot.row, bot.col+1].is_open():
+                    ap_vector[1] = ap[bot.row, bot.col+1]
+                    cp_vector[1] = cp[bot.row, bot.col+1]
+                else:
+                    ap_vector[1] = 1.0
+                    cp_vector[1] = 0.0
+            if bot.row > 0:
+                if shp.ship[bot.row-1, bot.col].is_open():
+                    ap_vector[2] = ap[bot.row-1, bot.col]
+                    cp_vector[2] = cp[bot.row-1, bot.col]
+                else:
+                    ap_vector[2] = 1.0
+                    cp_vector[2] = 0.0
+            if bot.row < 29:
+                if shp.ship[bot.row+1, bot.col].is_open():
+                    ap_vector[3] = ap[bot.row+1, bot.col]
+                    cp_vector[3] = cp[bot.row+1, bot.col]
+                else:
+                    ap_vector[3] = 1.0
+                    cp_vector[3] = 0.0
+            
+            datarow_adj.append(ap_vector)
+            datarow_adj.append(cp_vector)
+            data_adjacent.append(datarow_adj)
+            
+
+             
 
             decision = bot.bot1_move()
             decision_vector = np.zeros(5)
@@ -948,9 +1048,19 @@ def simulateData(k,boards):
     labels = np.concatenate(labels).ravel().T.reshape(-1,1)
     print(data.shape)
     print(labels.shape)
-    dataframe = np.hstack((data, labels))
+    
     #print(dataframe[-2:])
-    np.save('dataframe.npy', dataframe)
+    np.save('Actual/data.npy', data)
+    np.save('Actual/labels.npy', labels)
+    
+    np.save('Actual/data_with_walls.npy', data_with_walls)
+    np.save('Actual/data_sensor.npy', data_sensor)
+    np.save('Actual/data_adjacent.npy', data_adjacent)
+    np.save('Actual/data_bot_loc.npy', data_bot_loc)
+    np.save('Actual/data_bot_loc_open.npy', data_bot_loc_open)
+    dataframe = np.hstack((data, labels))
+    np.save('Actual/dataframe.npy', dataframe)
+
     
 
 
@@ -965,13 +1075,13 @@ def runSimulate():
         print("ship generated")
         boards.append(shp)
     #experiement takes k, boards
-    with open('board.pickle', "wb") as b_file:
+    with open('Actual/board.pickle', "wb") as b_file:
         pickle.dump(shp, b_file, pickle.HIGHEST_PROTOCOL)
-    np.save('board.npy', boards[0])
+    np.save('Actual/board.npy', boards[0].ship)
     simulateData(k, boards)
 
 
-def compareBots(model):
+def compareBots(model, shp):
     """This runs bot 1 with and without neural network"""
     numTrials = 2
     k = 3
@@ -980,8 +1090,8 @@ def compareBots(model):
     
     success_flag = False
     
-    shp1 = Ship("board.npy")
-    shp2 = Ship("board.npy")
+    shp1 = shp
+    shp2 = copy.deepcopy(shp)
     alpha = 0.5
 
     for trial in range(numTrials):
@@ -1058,7 +1168,9 @@ def compareBots(model):
             
             # Neural Network powered bot move sequence
             cur_board_state = bot2.get_cur_state()
-            pred = model.predict(cur_board_state)
+            #print(cur_board_state.shape)
+            print(cur_board_state)
+            pred = model.predict(cur_board_state, True)
             bot2.nn_bot_move(pred)
             
             # MUST RECORD THE MOVE IT TAKES
@@ -1100,6 +1212,7 @@ if __name__ == "__main__":
     #x = np.load('Final/board.npy', allow_pickle=True)
     # open a file, where you stored the pickled data
 
+    """
     file = open('board.pickle', 'rb')
     shp = pickle.load(file)
     
@@ -1109,7 +1222,7 @@ if __name__ == "__main__":
     #print(shp.print_ship())
     distances = shp.get_one_distances()
     print(distances.shape)
-    
+    """
 
     # # dump information to that file
     #data = np.load("dataframe.npy", allow_pickle=True)
@@ -1132,12 +1245,12 @@ if __name__ == "__main__":
 
 
 
-    #runSimulate()
+    runSimulate()
     #nn = model1(distances, train_split=0.7, real_data = True)
-    nn = model1(distances,train_split=0.7,  real_data = False)
+    #nn = model1(distances,train_split=0.7,  real_data = False)
     
     #nn = model2(distances,train_split=0.7,  real_data = True)
     #nn = model2(distances,train_split=0.7,  real_data = False)
-    #compareBots(nn)
+    #compareBots(nn, shp)
     
     
