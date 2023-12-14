@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 from ship import Ship
 from alien import Alien
 from bot import Bot
-#import pickle
-import pickle5 as pickle
-import pandas as pd
+import pickle
+#import pickle5 as pickle
+#import pandas as pd
 
 
 
 
 class NN:
-    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, hidden_size6, hidden_size7, hidden_size8,  output_size, learning_rate, num_epochs, batch_size, model_type):
+    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, hidden_size6, hidden_size7, hidden_size8,  output_size, learning_rate, num_epochs, batch_size, model_type, distances_array, real_data):
         #np.random.seed(0)
         self.input_size = input_size
         self.hidden_size1 = hidden_size1
@@ -43,6 +43,9 @@ class NN:
 
         self.test_acc_smooth = []
         self.train_acc_smooth = []
+        
+        self.distances = distances_array
+        self.real = real_data
 
     # initialize weights and biases
     def initialize_parameters(self):
@@ -316,6 +319,8 @@ class NN:
     def train(self, X, y, X_test, y_test):
         # initialize the weights and biases
         self.initialize_parameters()
+        
+        distances = self.distances
     
         for i in range(self.epochs):
         #for i in range(1):
@@ -327,6 +332,20 @@ class NN:
             x_test_batch = X_test[test_batch_indices]
             y_test_batch = y_test[test_batch_indices]
             #print('actual', y_test_batch[0:2,:])
+            
+            if self.real:
+                for elem in x_batch:
+                    #print(elem.shape)
+                    #print(elem[0])
+                    #idx = int(elem[0]*900)
+                    #elem = np.multiply(elem, distances[idx])
+                    pass
+                    
+                for elem in x_test_batch:
+                    #idx = int(elem[0]*900)
+                    #elem = np.multiply(elem, distances[idx])
+                    pass
+                
 
             #x_batch = X
             #y_batch = y
@@ -346,7 +365,7 @@ class NN:
 
             
 
-            self.train_accuracies.append(self.acc_score(y_batch, self.A8))
+            acc_tr = self.acc_score(y_batch, self.A8)
             loss = self.cross_entropy_loss(self.A8, y_batch)
             # if self.model_type == 1:
             #     loss = self.cross_entropy_loss(self.A2, y_batch)
@@ -370,13 +389,16 @@ class NN:
             
             #print(f"iteration {i}: train loss = {loss}")
             #print("before predict")
-            self.test_accuracies.append(self.acc_score(y_test_batch, self.predict(x_test_batch)))
+            acc_ts = self.acc_score(y_test_batch, self.predict(x_test_batch))
 
             test_loss = self.cross_entropy_loss(self.forward_propagation(x_test_batch, True), y_test_batch)
             
 
             self.test_losses_smooth.append(test_loss)
             self.train_losses_smooth.append(loss)
+
+            self.test_acc_smooth.append(acc_ts)
+            self.train_acc_smooth.append(acc_tr)
 
             if i % 10 == 0:
                 
@@ -388,11 +410,16 @@ class NN:
 
                 self.test_losses.append(test_loss_smooth)
                 self.train_losses.append(loss_smooth)
+                self.test_accuracies.append(np.mean(self.test_acc_smooth))
+                self.train_accuracies.append(np.mean(self.train_acc_smooth))
 
                 print(f"iteration {i}: Total train loss = {loss_smooth}, total test loss = {test_loss_smooth}")
                 # print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
                 self.test_losses_smooth = []
                 self.train_losses_smooth = []
+                self.test_acc_smooth = []
+                self.train_acc_smooth = []
+                
                 
 
             #print(self.A2)
@@ -401,6 +428,13 @@ class NN:
     
     # predict the labels for new data
     def predict(self, X):
+        
+        distances = self.distances
+        #idx = int(X[0]*900)
+        if self.real:
+            X = np.multiply(X, distances[idx])
+        
+        
         if self.model_type == 1:
             A3 = self.forward_propagation(X, True)
             pred = np.zeros((X.shape[0], 5))
@@ -497,9 +531,10 @@ def clean_data(dataset, train_split, model_type):
     return(X_train, y_train, X_test, y_test)
 
 
-def model1(train_split, real_data):
+def model1(distances_array,train_split,   real_data,):
     model_type = 1
     dataset = np.load('dataframe1.npy', allow_pickle=True)
+    #print(dataset[0])
     # dataset = np.load('dataframe.npy', allow_pickle=True)
     # dataset = pd.DataFrame(dataset)
     # dataset = dataset.fillna(0.0)
@@ -508,6 +543,7 @@ def model1(train_split, real_data):
     if real_data:
         
         X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+        #print(X_train[:,0])
 
         # with open('X_train.pickle', "wb") as b_file:
         #     pickle.dump(X_train, b_file, pickle.HIGHEST_PROTOCOL)
@@ -555,7 +591,7 @@ def model1(train_split, real_data):
 
         # in_size = k
 
-        nn = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1, 2000, 67, model_type) #53, model_type)
+        nn = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1*math.sqrt(67), 2000, 67, model_type, distances_array, True) #53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
@@ -576,16 +612,16 @@ def model1(train_split, real_data):
                 y_test[i,1] = 1
         
         #nn = NN(1, 20, 10, 5, .1 ,1000, 53, model_type)
-        nn = NN(1, 10, 9, 8, 7, 6, 5, 4, 3, 5, .01, 1000, 53, model_type)
+        nn = NN(1, 10, 9, 8, 7, 6, 5, 4, 3, 5, .01*math.sqrt(53), 1000, 53, model_type, distances_array, False)
 
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
     nn.plotAcc()
     return nn
 
-def model2(train_split, real_data):
+def model2(distances_array,train_split,  real_data):
     model_type = 2
-    dataset = np.load('dataframe1.npy', allow_pickle=True)
+    dataset = np.load('dataframe_small.npy', allow_pickle=True)
     
     if real_data:
         X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
@@ -643,7 +679,7 @@ def model2(train_split, real_data):
         # in_size = 5
 
 
-        nn = NN(in_size, 600, 100, 1, .1, 1000, 53, model_type) #Batch Size probably not 53 for whole dataset.
+        nn = NN(in_size, 600, 100, 1, .1*math.sqrt(53), 1000, 53, model_type, distances_array, True) #Batch Size probably not 53 for whole dataset.
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5
@@ -686,17 +722,22 @@ def model2(train_split, real_data):
 
 
 
-        nn = NN(in_size, 20,10, 1, .1, 1000, 53, model_type)
+        nn = NN(in_size, 20,10, 1, .1*math.sqrt(53), 1000, 53, model_type, distances_array, False)
         
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
     nn.plotAcc()
     return nn
 
+#def model3(distances_array,train_split,  real_data):
+#
+
+
+
 def simulateData(k,boards):
     """This runs the 1 alien, 1 crew member experiments"""
     #numBoards = len(boards)
-    numTrials = 1000
+    numTrials = 100
     #bots = [1]
     success_flag = False
     
@@ -759,9 +800,8 @@ def simulateData(k,boards):
             decision_vector[decision] = 1
 
             datarow.append(decision_vector)
+            #print(datarow)
             datarow = np.asarray(datarow)
-
-
             data.append(datarow)
 
             #shp.print_ship()
@@ -828,7 +868,7 @@ def runSimulate():
         boards.append(shp)
     #experiement takes k, boards
     with open('board.pickle', "wb") as b_file:
-        pickle.dump(boards[0], b_file, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(shp, b_file, pickle.HIGHEST_PROTOCOL)
     np.save('board.npy', boards[0])
     simulateData(k, boards)
 
@@ -961,24 +1001,43 @@ def compareBots(model):
 if __name__ == "__main__":
     #x = np.load('Final/board.npy', allow_pickle=True)
     # open a file, where you stored the pickled data
-    # file = open('Final/board.pickle', 'rb')
+
+    # file = open('board.pickle', 'rb')
+    # shp = pickle.load(file)
+    
+    # file.close()
+    # shp.open_cell_indices()
+    # shp.open_cell_distances()
+    # distances = shp.get_one_distances()
+    
 
     # # dump information to that file
-    # data = pickle.load(file)
+    #data = np.load("dataframe.npy", allow_pickle=True)
 
     # # close the file
-    # file.close()
+    
+
+    #dat = data[0:5000,]
+
+    #np.save("dataframe_small.npy", dat)
+
+
+
+
+    #with open('X_small.pickle', "wb") as b_file:
+    #    pickle.dump(dat, b_file, pickle.HIGHEST_PROTOCOL)
+
 
     # print(data.print_ship())
 
 
 
-    #runSimulate()
-    nn = model1(train_split=0.7, real_data = True)
-    #nn = model1(train_split=0.7, real_data = False)
+    runSimulate()
+    #nn = model1(distances, train_split=0.7, real_data = True)
+    #nn = model1(distances,train_split=0.7,  real_data = False)
     
-    #nn = model2(train_split=0.7, real_data = True)
-    #nn = model2(train_split=0.7,real_data = False)
+    #nn = model2(distances,train_split=0.7,  real_data = True)
+    #nn = model2(distances,train_split=0.7,  real_data = False)
     #compareBots(nn)
     
     
