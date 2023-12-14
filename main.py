@@ -240,7 +240,17 @@ class NN:
             self.Z8 = Z8
             self.A8 = A8
         
+        #print(A8.shape)
         return A8
+        # #print(X.shape)
+        # #print(X.T[5,8:,])
+        # #print("here")
+        # #print(X.T[5:9,].T.shape)
+        # zero = np.zeros((67,1))
+        # ret = np.append(X.T[5:9,:].T, zero, axis=1)
+        # #print("herhereh")
+        # #print(ret.shape)
+        # return ret.T
 
     
     # backward propagation
@@ -418,18 +428,18 @@ class NN:
             y_test_batch = y_test[test_batch_indices]
             #print('actual', y_test_batch[0:2,:])
             
-            if self.real:
-                for elem in x_batch:
-                    #print(elem.shape)
-                    #print(elem[0])
-                    idx = int(elem[0]*900)
-                    elem = np.multiply(elem, distances[idx])
-                    #pass
+            # if self.real:
+            #     for elem in x_batch:
+            #         #print(elem.shape)
+            #         #print(elem[0])
+            #         idx = int(elem[0]*900)
+            #         elem = np.multiply(elem, distances[idx])
+            #         #pass
                     
-                for elem in x_test_batch:
-                    idx = int(elem[0]*900)
-                    elem = np.multiply(elem, distances[idx])
-                    #pass
+            #     for elem in x_test_batch:
+            #         idx = int(elem[0]*900)
+            #         elem = np.multiply(elem, distances[idx])
+            #         #pass
                 
 
             #x_batch = X
@@ -437,6 +447,7 @@ class NN:
 
             # forward propagation
             #print("before forward prob")
+            #print(x_batch[0])
             self.forward_propagation(x_batch)
 
             
@@ -451,6 +462,7 @@ class NN:
             
 
             acc_tr = self.acc_score(y_batch, self.A8)
+            #print()
             loss = self.cross_entropy_loss(self.A8, y_batch)
             # if self.model_type == 1:
             #     loss = self.cross_entropy_loss(self.A2, y_batch)
@@ -517,12 +529,12 @@ class NN:
         distances = self.distances
 
         
-        #idx = int(X[0])
-        if self.real:
-           for elem in X:
-                idx = int(elem[0]*900)
-                elem = np.multiply(elem, distances[idx])
-                #pass
+        # #idx = int(X[0])
+        # if self.real:
+        #    for elem in X:
+        #         idx = int(elem[0]*900)
+        #         elem = np.multiply(elem, distances[idx])
+        #         #pass
         
         
         if self.model_type == 1:
@@ -602,7 +614,10 @@ def clean_data(dataset, train_split, model_type):
     # print()
 
     print("Train Reshaped:")
-    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1256) #1260) #1252)
+    #print("test", X_train[:,1].shape)
+    #print(X_train[:,1])
+    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 8) #1260) #1252)
+    #HH = np.hstack(((np.expand_dims(X_train[:,1],0)),np.expand_dims(X_train[:,2],0))).reshape(X_train.shape[0], 8)
     X_train = np.hstack((X_train[:,0].reshape(-1, 1), HH))
     print(X_train.shape)
     if model_type == 1:
@@ -615,7 +630,7 @@ def clean_data(dataset, train_split, model_type):
     print()
 
     print("Test Reshaped:")
-    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1256) #1260) #1252)
+    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 8) #1260) #1252)
     X_test = np.hstack((X_test[:,0].reshape(-1, 1), HH))
     print(X_test.shape)
     if model_type == 1:
@@ -628,7 +643,61 @@ def clean_data(dataset, train_split, model_type):
 
 def model1(distances_array,train_split,   real_data,):
     model_type = 1
-    dataset = np.load('dataframe.npy', allow_pickle=True)
+    adj = np.load('Actual2/data_adjacent.npy', allow_pickle=True)
+    #print(adj)
+    dataset= np.load('Actual2/dataframe.npy', allow_pickle=True)
+    #print(dataset[:,1].shape)
+    #print(dataset[:,1][0].shape)
+    
+    #dataset[:,1] = np.asarray(adj[:,0].tolist(), dtype=object)
+    #print("test1",dataset[:,1][0])
+    #print("test2", adj[:,0][0])
+    
+    #adjacent alien probs
+    #dataset[:,1] = adj[:,0].tolist()
+    dataset[:,1] = np.zeros((78249, 4)).tolist()
+    
+    #adjacent crew probs
+    #dataset[:,2] = np.zeros((78249, 4)).tolist()
+    temp = adj[:,1]
+    ar1 = np.where(temp[:,0] == 0)
+    ar2 = np.where(temp[:,1] == 0)
+    ar3 = np.where(temp[:,2] == 0)
+    ar4 = np.where(temp[:,3] == 0)
+    bad_dat = np.intersect1d(ar1,ar2)
+    bad_dat = np.intersect1d(bad_dat,ar3)
+    bad_dat = np.intersect1d(bad_dat, ar4)
+
+    
+    #print(np.where(adj[:,1][0] == 0))
+    #print("yes",np.where(adj[:,1][0] == 0 and adj[:,1][1] == 0 and adj[:,1][2] == 0 and adj[:,1][3] == 0))
+    dataset[:,2] = adj[:,1].tolist()
+    dataset = np.delete(dataset, bad_dat, axis = 0)
+    print(dataset.shape)
+    correct_count = 0
+    for i in range(23770):
+        #print(dataset[i][2])
+        guess1 = np.argmax(np.asarray(dataset[i][2]))
+        guess2 = np.argmin(np.asarray(dataset[i][1]))
+        guess3 = np.argmax(np.asarray(dataset[i][2]) - np.asarray(dataset[i][1]))
+        #print(guess3)
+        #print(dataset[i])
+        correct = np.argmax(np.asarray(dataset[i][3]))
+        #print(correct)
+       
+        if guess1 == correct:
+            correct_count += 1
+            
+    
+    print(correct_count)
+    print("accuracy", correct_count / 23770)
+    
+    
+    
+    
+    
+    #x_dataset = dataset.reshape(dataset.shape[0], 8)
+    #print("data",dataset.shape)
     #print(dataset[0])
     # dataset = np.load('dataframe.npy', allow_pickle=True)
     # dataset = pd.DataFrame(dataset)
@@ -690,8 +759,11 @@ def model1(distances_array,train_split,   real_data,):
         # print(X_test.shape)
 
         # in_size = k
-        drop_out = 0.7
-        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
+        drop_out = 0.1
+        print(in_size)
+        #nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
+        nn = NN(in_size, 100, 60, 45, 30, 25, 20, 15, 10, 5, .1, 0, 10000, 67, model_type, distances_array, drop_out, True) #53, model_type)
+        
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
@@ -829,12 +901,15 @@ def model2(distances_array,train_split,  real_data):
     nn.plotAcc()
     return nn
 
-def model3(distances_array,train_split,  real_data):
-    return 0
+def model3(distances_array,train_split, num_epochs, shp):
+    #return 0
     model_type = 3
-    dataset = np.load('dataframe.npy', allow_pickle=True)
+    drop_out = 0.7
+    dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
     # Simulate initial board states
     X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
+
+
     X_train[:,0] = X_train[:,0] / (30*30)
     X_test[:,0] = X_test[:,0] / (30*30)
     in_size = (len(dataset[0,1])*2)+1
@@ -843,28 +918,39 @@ def model3(distances_array,train_split,  real_data):
     #y_test = np.squeeze(y_test)
     
     # Train model 1 on each board state to get predicted next move based on true success labels
-    nn_actor = NN(1261, 30, 25, 20, 18, 15, 12, 8, 6, 5, .1*math.sqrt(67), 2000, 67, model_type, distances_array, True) #53, model_type)
-    moves = nn_actor.predict(X)
+    
+    nn_actor = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True)
+    nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
+    moves_train = nn_actor.predict(X_train)
+    moves_test = nn_actor.predict(X_test)
 
-    # Move all the states
-    X = X.transition(moves)
+    # Move all the states [NEED TO IMPLEMENT]
+    X_train = X_train.transition(moves_train)
+    X_test = X_test.transition(moves_test)
+
+
     # Train model 2 on each board state to predict probability of success
-    nn_critic = NN(in_size, 600, 100, 1, .1*math.sqrt(53), 1000, 53, model_type, distances_array, True)
-    y = nn_critic.predict(X)
+    nn_critic = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True)
+    nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
+    y_train = nn_critic.predict(X_train)
+    y_test = nn_critic.predict(X_test)
 
     # Repeat:
     for epoch in num_epochs:
         # Update model 1 using labels from model 2 instead of actual success labels
-        nn_actor.train()
-        moves = nn_actor.predict(X)
-        # Move all states
-        X = X.transition(moves)
+        nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
+        moves_train = nn_actor.predict(X_train)
+        moves_test = nn_actor.predict(X_test)
+        # Move all states [NEED TO IMPLEMENT]
+        X_train = X_train.transition(moves_train)
+        X_test = X_test.transition(moves_test)
         # Update model 2 on each board state to predict probability of success again
-        nn_critic.train()
-        y = nn_critic.predict(X)
+        nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
+        y_train = nn_critic.predict(X_train)
+        y_test = nn_critic.predict(X_test)
     
     # Run a bot with model 1.
-    bot3 = Bot(nn_actor)
+    compareBots(nn_actor, shp)
 
 
 def simulateData(k,boards):
@@ -1087,13 +1173,73 @@ def runSimulate():
     np.save('Actual/board.npy', boards[0].ship)
     simulateData(k, boards)
 
+def balanceSet(X_data, y_data, model_type):
+
+    X = np.hstack(X_data, y_data)
+    if model_type == 1:
+        L = np.bincount(X[:,-5])
+        Lii = np.nonzero(L)[0]
+        Lfreq = np.vstack((Lii,L[Lii])).T
+        
+        R = np.bincount(X[:,-4])
+        Rii = np.nonzero(R)[0]
+        Rfreq = np.vstack((Rii,R[Rii])).T
+
+        U = np.bincount(X[:,-3])
+        Uii = np.nonzero(U)[0]
+        Ufreq = np.vstack((Uii,U[Uii])).T
+
+        D = np.bincount(X[:,-2])
+        Dii = np.nonzero(D)[0]
+        Dfreq = np.vstack((Dii,D[Dii])).T
+        
+        X = np.bincount(X[:,-1])
+        Xii = np.nonzero(X)[0]
+        Xfreq = np.vstack((Xii,X[Xii])).T
+        
+        freqs = [Lfreq[1,:], Rfreq[1,:], Ufreq[1,:], Dfreq[1,:], Xfreq[1,:]]
+        freqs = np.asarray(freqs)
+        idx = np.argmin(freqs[:,1])
+        lower_bound = freqs[idx][0]
+
+        idxes = [0, 1, 2, 3, 4]
+        idxes.remove(idx)
+        for i in range(len(idxes)):
+            idxes[i] = idxes[i] - 5
+        samples = []
+        for i in idxes:
+            subset = X[X[:,i] == 1]
+            samples.append(subset[np.random.choice(subset.shape[0], lower_bound, replace=False), :])
+        F = X[X:,idx] == 1
+        for samp in samples:
+            F = np.vstack(F, samp)
+        y_data = F[:,-1]
+        X_data = np.delete(F, [-1], axis=1)
+        return (X_data, y_data)
+    else:
+        y = np.bincount(X[:,-1])
+        ii = np.nonzero(y)[0]
+        freq = np.vstack((ii,y[ii])).T
+        idx = np.argmin(freq[:,1])
+        val = np.argmin(freq[:,0])
+        lower_bound = freq[idx,1]
+        q = X[X[:, -1] == val]
+        p = X[X[:, -1] == math.abs(val - 1)]
+        q = q[np.random.choice(q.shape[0], lower_bound, replace=False), :]
+
+        X = np.vstack(p, q)
+        y_data = X[:,-1]
+        X_data = np.delete(X, [-1], axis=1)
+        return (X_data, y_data)
+
 
 def compareBots(model, shp):
     """This runs bot 1 with and without neural network"""
     numTrials = 2
     k = 3
-    prob_success = np.zeros((2, numTrials))
-    avg_trial_len = np.zeros((2, numTrials))
+    avg_trial_len = np.zeros((2))
+    avg_success_trial_len = np.zeros((2))
+    avg_success_rate = np.zeros((2))
     
     success_flag = False
     
@@ -1143,20 +1289,22 @@ def compareBots(model, shp):
 
             if shp1.ship[i][j].contains_alien():
                 print(f"Dead: {T}")
-                avg_trial_len[0][trial] += T / (numTrials)
+                avg_trial_len[0] += T
                 flag = False
                 break
             if shp1.ship[i][j].contains_crew():
                 print(f"Saved: {T}")
-                prob_success[0][trial] += 1 / numTrials
-                avg_trial_len[0][trial] += T / (numTrials)
+                avg_success_trial_len[0] += T
+                avg_success_rate[0] += 1
+                avg_trial_len[0] += T
+    
                 shp1.ship[i][j].remove_crew()
                 flag = False
                 break
             shp1.one_one_bot_move_update()
             if alien1.move():
                 print(f"Dead: {T}")
-                avg_trial_len[0][trial] += T / (numTrials)
+                avg_trial_len[0] += T / (numTrials)
                 flag = False
                 break
             shp1.one_one_alien_move_update()
@@ -1186,13 +1334,14 @@ def compareBots(model, shp):
 
             if shp2.ship[i][j].contains_alien():
                 print(f"Dead: {T}")
-                avg_trial_len[1][trial] += T / (numTrials)
+                avg_trial_len[1] += T
                 flag = False
                 break
             if shp2.ship[i][j].contains_crew():
                 print(f"Saved: {T}")
-                prob_success[1][trial] += 1 / numTrials
-                avg_trial_len[1][trial] += T / (numTrials)
+                avg_success_trial_len[1] += T
+                avg_success_rate[1] += 1
+                avg_trial_len[1] += T
                 shp2.ship[i][j].remove_crew()
                 flag = False
                 break
@@ -1202,6 +1351,7 @@ def compareBots(model, shp):
 
             if alien2.move():
                 print(f"Dead: {T}")
+                avg_trial_len[1] += T
                 flag = False
                 break
             shp2.one_one_alien_move_update()
@@ -1212,6 +1362,58 @@ def compareBots(model, shp):
             shp2.one_one_crew_beep_update(crew_beep)
             T += 1
         shp2.empty_ship()
+    avg_success_trial_len[0] /= avg_success_rate[0]
+    avg_success_trial_len[1] /= avg_success_rate[1]
+    avg_success_rate[0] /= numTrials
+    avg_success_rate[1] /= numTrials
+    avg_trial_len[0] /= numTrials
+    avg_trial_len[1] /= numTrials
+
+
+    fig, ax = plt.subplots()
+
+    fruits = ['Bot 1 (Default)', 'Bot Using Neural Network']
+    counts = [avg_success_rate[0], avg_success_rate[1]]
+    bar_labels = ['Bot 1 (Default)', 'Bot Using Neural Network']
+    bar_colors = ['tab:red', 'tab:blue']
+
+    ax.bar(fruits, counts, label=bar_labels, color=bar_colors)
+
+    ax.set_ylabel('Success Rate')
+    ax.set_title('Trial Success Rate of Bot 1 and Bot NN')
+    ax.legend(title='Bot Type')
+
+    plt.savefig('success_prob.png')
+    plt.show()
+    plt.close()
+
+    group = ("Average Success Rate", "Average Length of Successful Trial", "Average Length of Trial")
+    group_means = {
+        "Bot 1 (Default)": (avg_success_trial_len[0], avg_trial_len[0]),
+        "Bot Using Neural Network": (avg_success_trial_len[1], avg_trial_len[1])
+    }
+    z = np.arange(len(group))  # the label locations
+    width = 0.25  # the width of the bars
+    multiplier = 0
+    
+    
+    fig, ax = plt.subplots(layout='constrained')
+
+    for attribute, measurement in group_means.items():
+        offset = width * multiplier
+        rects = ax.bar(z + offset, measurement, width, label=attribute)
+        ax.bar_label(rects, padding=3)
+        multiplier += 1
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Average Length of Trial')
+    ax.set_title('Average Length of Trials Bot 1 and Bot NN')
+    ax.set_xticks(z + width, group)
+    ax.legend(loc='upper left', ncols=3)
+    
+    plt.savefig('trial_length_plot.png')
+    plt.show()
+    plt.close()
     
 
     
@@ -1220,7 +1422,7 @@ if __name__ == "__main__":
     # open a file, where you stored the pickled data
 
     
-    file = open('board.pickle', 'rb')
+    file = open('Actual2/board.pickle', 'rb')
     shp = pickle.load(file)
     
     file.close()
@@ -1252,11 +1454,14 @@ if __name__ == "__main__":
 
 
     #runSimulate()
-    #nn = model1(distances, train_split=0.7, real_data = True)
-    nn = model1(distances,train_split=0.7,  real_data = False)
+    nn = model1(distances, train_split=0.7, real_data = True)
+    #nn = model1(distances,train_split=0.7,  real_data = False)
     
     #nn = model2(distances,train_split=0.7,  real_data = True)
     #nn = model2(distances,train_split=0.7,  real_data = False)
     #compareBots(nn, shp)
+
+
+    #model3(distances,=0.7, num_epochs=100, shp)
     
     
