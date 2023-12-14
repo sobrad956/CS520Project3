@@ -16,7 +16,7 @@ import copy
 
 
 class NN:
-    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, hidden_size6, hidden_size7, hidden_size8,  output_size, learning_rate, num_epochs, batch_size, model_type, distances_array, drop_out, real_data):
+    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, hidden_size4, hidden_size5, hidden_size6, hidden_size7, hidden_size8,  output_size, learning_rate, decay, num_epochs, batch_size, model_type, distances_array, drop_out, real_data):
         #np.random.seed(0)
         self.input_size = input_size
         self.hidden_size1 = hidden_size1
@@ -48,6 +48,7 @@ class NN:
         self.distances = distances_array
         self.real = real_data
         self.drop_out = drop_out #Percent of neurons at each layer to keep activated
+        self.decay = decay
 
     # initialize weights and biases
     def initialize_parameters(self):
@@ -334,24 +335,25 @@ class NN:
         self.dW1 = (1/m) * np.dot(dZ1, X)
         self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
     
-    def update_parameters(self):
+    def update_parameters(self, epoch_num):
         # update the weights and biases
-        self.W1 = self.W1 - self.lr * self.dW1
-        self.b1 = self.b1 - self.lr * self.db1
-        self.W2 = self.W2 - self.lr * self.dW2
-        self.b2 = self.b2 - self.lr * self.db2
-        self.W3 = self.W3 - self.lr * self.dW3
-        self.b3 = self.b3 - self.lr * self.b3
-        self.W4 = self.W4 - self.lr * self.dW4
-        self.b4 = self.b4 - self.lr * self.b4
-        self.W5 = self.W5 - self.lr * self.dW5
-        self.b5 = self.b5 - self.lr * self.b5
-        self.W6 = self.W6 - self.lr * self.dW6
-        self.b6 = self.b6 - self.lr * self.b6
-        self.W7 = self.W7 - self.lr * self.dW7
-        self.b7 = self.b7 - self.lr * self.b7
-        self.W8 = self.W8 - self.lr * self.dW8
-        self.b8 = self.b8 - self.lr * self.b8
+        lr = self.lr/(1+self.decay*epoch_num)
+        self.W1 = self.W1 - lr * self.dW1
+        self.b1 = self.b1 - lr * self.db1
+        self.W2 = self.W2 - lr * self.dW2
+        self.b2 = self.b2 - lr * self.db2
+        self.W3 = self.W3 - lr * self.dW3
+        self.b3 = self.b3 - lr * self.b3
+        self.W4 = self.W4 - lr * self.dW4
+        self.b4 = self.b4 - lr * self.b4
+        self.W5 = self.W5 - lr * self.dW5
+        self.b5 = self.b5 - lr * self.b5
+        self.W6 = self.W6 - lr * self.dW6
+        self.b6 = self.b6 - lr * self.b6
+        self.W7 = self.W7 - lr * self.dW7
+        self.b7 = self.b7 - lr * self.b7
+        self.W8 = self.W8 - lr * self.dW8
+        self.b8 = self.b8 - lr * self.b8
         
     
     def zero_grad(self):
@@ -464,7 +466,7 @@ class NN:
         
             # update the parameters
             #print("before update param")
-            self.update_parameters()
+            self.update_parameters(i)
             
             #print(x_test_batch[0:2,:].shape)
             #print('prediction', self.predict(x_test_batch[0:2,:]))
@@ -539,16 +541,21 @@ class NN:
         plt.plot(self.train_losses, label='train')
         plt.plot(self.test_losses, label='test')
         plt.legend(loc='best')
-        plt.title('Loss Plot')
+        plt.title('Loss vs Epochs')
+        plt.xlabel('Epoch Number (in 10s)')
+        plt.ylabel('Cross-Entropy Loss')
         plt.savefig('loss_plot.png')
         plt.show()
         plt.close()
 
     def plotAcc(self):
+        #plt.figure(figsize=(6.4,8))
         plt.plot(self.test_accuracies, label='test')
         plt.plot(self.train_accuracies, label='train')
         plt.legend(loc='best')
-        plt.title('Accuracy Plot')
+        plt.title('Accuracy vs Epochs')
+        plt.xlabel('Epoch Number (in 10s)')
+        plt.ylabel('Percent Accuracy')
         plt.savefig('acc.png')
         plt.show()
         plt.close()
@@ -684,7 +691,7 @@ def model1(distances_array,train_split,   real_data,):
 
         # in_size = k
         drop_out = 0.7
-        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
+        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
         y_train = np.zeros((59042, 5))
@@ -706,7 +713,7 @@ def model1(distances_array,train_split,   real_data,):
         
         #nn = NN(1, 20, 10, 5, .1 ,1000, 53, model_type)
         drop_out = 0.7
-        nn = NN(1, 10, 9, 8, 7, 6, 5, 4, 3, 5, .01*math.sqrt(53), 1000, 53, model_type, distances_array, drop_out, False)
+        nn = NN(1, 10, 9, 8, 7, 6, 5, 4, 3, 5, .05, 0, 2000, 53, model_type, distances_array, drop_out, False)
 
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
@@ -772,7 +779,7 @@ def model2(distances_array,train_split,  real_data):
 
         # in_size = 5
         drop_out = 0.7
-        nn = NN(in_size, 10, 9, 8, 7, 6, 5, 4, 3, 1, .001, 1000, 53, model_type, distances_array, drop_out, True)
+        nn = NN(in_size, 10, 9, 8, 7, 6, 5, 4, 3, 1, .01, 0.01, 1000, 53, model_type, distances_array, drop_out, True)
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5
@@ -814,7 +821,7 @@ def model2(distances_array,train_split,  real_data):
         in_size = 5
 
         drop_out = 0.7
-        nn = NN(in_size, 600, 500, 400, 300, 200, 100, 50, 25, 1, .01, 1000, 53, model_type, distances_array, drop_out, False)
+        nn = NN(in_size, 600, 500, 400, 300, 200, 100, 50, 25, 1, .01, 0.01, 1000, 53, model_type, distances_array, drop_out, False)
         
         
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
@@ -1212,7 +1219,7 @@ if __name__ == "__main__":
     #x = np.load('Final/board.npy', allow_pickle=True)
     # open a file, where you stored the pickled data
 
-    """
+    
     file = open('board.pickle', 'rb')
     shp = pickle.load(file)
     
@@ -1222,7 +1229,6 @@ if __name__ == "__main__":
     #print(shp.print_ship())
     distances = shp.get_one_distances()
     print(distances.shape)
-    """
 
     # # dump information to that file
     #data = np.load("dataframe.npy", allow_pickle=True)
@@ -1245,9 +1251,9 @@ if __name__ == "__main__":
 
 
 
-    runSimulate()
+    #runSimulate()
     #nn = model1(distances, train_split=0.7, real_data = True)
-    #nn = model1(distances,train_split=0.7,  real_data = False)
+    nn = model1(distances,train_split=0.7,  real_data = False)
     
     #nn = model2(distances,train_split=0.7,  real_data = True)
     #nn = model2(distances,train_split=0.7,  real_data = False)
