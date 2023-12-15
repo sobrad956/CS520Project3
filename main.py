@@ -98,7 +98,7 @@ class NN:
         return -(1/m) * np.sum(np.multiply(y_true, np.log(y_pred+ 1e-15) + (1-y_true)*np.log(1-y_pred+ 1e-15) ))
     
     def cross_entropy_loss(self, y_pred, y_true): #For multiclass classification
-        m = y_true.shape[0]
+        m = y_true.shape[1]
         #print('y_true:', y_true.shape)
         #print('y_pred:', y_pred.shape)
         return -(1/m) * np.sum(np.multiply(y_true, np.log(y_pred +1e-15))) #Added small error for divide by zero errors
@@ -416,111 +416,112 @@ class NN:
         self.initialize_parameters()
         
         distances = self.distances
-    
-        for i in range(self.epochs):
+
+        for j in range(self.epochs):
+            for i in range(1000):
+        #for i in range(self.epochs):
+        #for i in range(10):
         #for i in range(1):
-            batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
-            test_batch_indices = random.sample([i for i in range(X_test.shape[0])], k = self.batch_size)
-            x_batch = X[batch_indices]
-            y_batch = y[batch_indices]
+                batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
+                test_batch_indices = random.sample([i for i in range(X_test.shape[0])], k = self.batch_size)
+                batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
+                test_batch_indices = random.sample([i for i in range(X_test.shape[0])], k = self.batch_size)
+                
+                x_batch = X[batch_indices]
+                y_batch = y[batch_indices]
 
-            x_test_batch = X_test[test_batch_indices]
-            y_test_batch = y_test[test_batch_indices]
-            #print('actual', y_test_batch[0:2,:])
-            
-            # if self.real:
-            #     for elem in x_batch:
-            #         #print(elem.shape)
-            #         #print(elem[0])
-            #         idx = int(elem[0]*900)
-            #         elem = np.multiply(elem, distances[idx])
-            #         #pass
+                x_test_batch = X_test[test_batch_indices]
+                y_test_batch = y_test[test_batch_indices]
+                
+                #x_test_batch = X_test
+                #y_test_batch = y_test
+                #print('actual', y_test_batch[0:2,:])
+                
+                # if self.real:
+                #     for elem in x_batch:
+                #         #print(elem.shape)
+                #         #print(elem[0])
+                #         idx = int(elem[0]*900)
+                #         elem = np.multiply(elem, distances[idx])
+                #         #pass
+                        
+                #     for elem in x_test_batch:
+                #         idx = int(elem[0]*900)
+                #         elem = np.multiply(elem, distances[idx])
+                #         #pass
                     
-            #     for elem in x_test_batch:
-            #         idx = int(elem[0]*900)
-            #         elem = np.multiply(elem, distances[idx])
-            #         #pass
+
+                #x_batch = X
+                #y_batch = y
+
+                # forward propagation
+                self.forward_propagation(x_batch)
+                #self.forward_propagation(X)
+
+                
+                y_batch = y_batch.T
+                y_test_batch = y_test_batch.T
+            
                 
 
-            #x_batch = X
-            #y_batch = y
-
-            # forward propagation
-            #print("before forward prob")
-            #print(x_batch[0])
-            self.forward_propagation(x_batch)
-
-            
-            y_batch = y_batch.T
-            y_test_batch = y_test_batch.T
-        
-            # compute the loss
-            #print("before loss compute")
-
-            
-
-            
-
-            acc_tr = self.acc_score(y_batch, self.A8)
-            #print()
-            loss = self.cross_entropy_loss(self.A8, y_batch)
-            # if self.model_type == 1:
-            #     loss = self.cross_entropy_loss(self.A2, y_batch)
-            #     #loss = self.cross_entropy_loss(self.predict(x_batch), y_batch)
-            # else:
-            #     #loss = self.binary_cross_entropy_loss(self.A2, y_batch)
-            #     #loss = self.binary_cross_entropy_loss(self.predict(x_batch), y_batch)
-        
-            # backward propagation
-            #print("before back prob")
-            self.zero_grad()
-            self.backward_propagation(x_batch, y_batch)
-        
-            # update the parameters
-            #print("before update param")
-            self.update_parameters(i)
-            
-            #print(x_test_batch[0:2,:].shape)
-            #print('prediction', self.predict(x_test_batch[0:2,:]))
-            
-            
-            #print(f"iteration {i}: train loss = {loss}")
-            #print("before predict")
-            acc_ts = self.acc_score(y_test_batch, self.predict(x_test_batch))
-
-            test_loss = self.cross_entropy_loss(self.forward_propagation(x_test_batch, True), y_test_batch)
-            
-
-            self.test_losses_smooth.append(test_loss)
-            self.train_losses_smooth.append(loss)
-
-            self.test_acc_smooth.append(acc_ts)
-            self.train_acc_smooth.append(acc_tr)
-
-            if i % 10 == 0:
                 
-                # self.predict(x_test_batch)
-                #test_loss = self.binary_cross_entropy_loss(self.predict(X_test), y_test.T)
-                #print(f"iteration {i}: Total train loss = {loss}")
-                loss_smooth = np.mean(np.asarray(self.train_losses_smooth))
-                test_loss_smooth = np.mean(np.asarray(self.test_losses_smooth))
-
-                self.test_losses.append(test_loss_smooth)
-                self.train_losses.append(loss_smooth)
-                self.test_accuracies.append(np.mean(self.test_acc_smooth))
-                self.train_accuracies.append(np.mean(self.train_acc_smooth))
-
-                print(f"iteration {i}: Total train loss = {loss_smooth}, total test loss = {test_loss_smooth}")
-                # print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
-                self.test_losses_smooth = []
-                self.train_losses_smooth = []
-                self.test_acc_smooth = []
-                self.train_acc_smooth = []
+                #acc_tr = self.acc_score(y, self.A8)
+                acc_tr = self.acc_score(y_batch, self.A8)
+            
+                loss = self.cross_entropy_loss(self.A8, y_batch)
+                #loss = self.cross_entropy_loss(self.A8, y)
+            
+            
+                # backward propagation
+                #print("before back prob")
+                self.zero_grad()
+                self.backward_propagation(x_batch, y_batch)
+            
+                # update the parameters
+                #print("before update param")
+                self.update_parameters(i)
+                
+                #print(x_test_batch[0:2,:].shape)
+                #print('prediction', self.predict(x_test_batch[0:2,:]))
                 
                 
+                #print(f"iteration {i}: train loss = {loss}")
+                #print("before predict")
+                acc_ts = self.acc_score(y_test_batch, self.predict(x_test_batch))
 
-            #print(self.A2)
-            #print(self.b1)
+                test_loss = self.cross_entropy_loss(self.forward_propagation(x_test_batch, True), y_test_batch)
+                
+
+                self.test_losses_smooth.append(test_loss)
+                self.train_losses_smooth.append(loss)
+
+                self.test_acc_smooth.append(acc_ts)
+                self.train_acc_smooth.append(acc_tr)
+
+                if  i % 100 == 0:
+                    
+                    # self.predict(x_test_batch)
+                    #test_loss = self.binary_cross_entropy_loss(self.predict(X_test), y_test.T)
+                    #print(f"iteration {i}: Total train loss = {loss}")
+                    loss_smooth = np.mean(np.asarray(self.train_losses_smooth))
+                    test_loss_smooth = np.mean(np.asarray(self.test_losses_smooth))
+
+                    self.test_losses.append(test_loss_smooth)
+                    self.train_losses.append(loss_smooth)
+                    self.test_accuracies.append(np.mean(self.test_acc_smooth))
+                    self.train_accuracies.append(np.mean(self.train_acc_smooth))
+
+                    print(f"iteration {i}: Total train loss = {loss_smooth}, total test loss = {test_loss_smooth}")
+                    # print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
+                    self.test_losses_smooth = []
+                    self.train_losses_smooth = []
+                    self.test_acc_smooth = []
+                    self.train_acc_smooth = []
+                    
+                    
+
+                #print(self.A2)
+                #print(self.b1)
 
     
     # predict the labels for new data
@@ -589,8 +590,6 @@ def clean_data(dataset, train_split, model_type):
     test = dataset[mask, :]
 
     
-    #train = dataset[:boundary]
-    #test = dataset[boundary:]
 
     X_train = train[:,0:3]
     if model_type == 1:
@@ -604,19 +603,10 @@ def clean_data(dataset, train_split, model_type):
     else:
         y_test = test[:,4:5]
 
-    # print("Train shapes:")
-    # print(X_train.shape)
-    # print(y_train.shape)
-
-    # print("Test shapes:")
-    # print(X_test.shape)
-    # print(y_test.shape)
-    # print()
-
+    
     print("Train Reshaped:")
-    #print("test", X_train[:,1].shape)
-    #print(X_train[:,1])
-    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 8) #1260) #1252)
+   
+    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1234) #1260) #1252)
     #HH = np.hstack(((np.expand_dims(X_train[:,1],0)),np.expand_dims(X_train[:,2],0))).reshape(X_train.shape[0], 8)
     X_train = np.hstack((X_train[:,0].reshape(-1, 1), HH))
     print(X_train.shape)
@@ -625,12 +615,18 @@ def clean_data(dataset, train_split, model_type):
     else:
         #print(y_train)
         y_train = y_train[:,0].reshape(X_train.shape[0], 1)
-    print(y_train.shape)
-
-    print()
+        
+    total_move = 0
+    for i in range(X_train.shape[0]):
+        #print(y_train[i])
+        cur_move = np.argmax(y_train[i])
+        
+        total_move += cur_move
+        
+    print("avg", total_move / X_train.shape[0])
 
     print("Test Reshaped:")
-    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 8) #1260) #1252)
+    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1234) #1260) #1252)
     X_test = np.hstack((X_test[:,0].reshape(-1, 1), HH))
     print(X_test.shape)
     if model_type == 1:
@@ -643,22 +639,11 @@ def clean_data(dataset, train_split, model_type):
 
 def model1(distances_array,train_split,   real_data,):
     model_type = 1
-    adj = np.load('Actual2/data_adjacent.npy', allow_pickle=True)
-    #print(adj)
-    dataset= np.load('Actual2/dataframe.npy', allow_pickle=True)
-    #print(dataset[:,1].shape)
-    #print(dataset[:,1][0].shape)
+    adj = np.load('Actual/data_adjacent.npy', allow_pickle=True)
+    det_sq = np.load('Actual/data_sensor.npy', allow_pickle=True)
+    dataset= np.load('Actual/dataframe.npy', allow_pickle=True)
     
-    #dataset[:,1] = np.asarray(adj[:,0].tolist(), dtype=object)
-    #print("test1",dataset[:,1][0])
-    #print("test2", adj[:,0][0])
-    
-    #adjacent alien probs
-    #dataset[:,1] = adj[:,0].tolist()
-    dataset[:,1] = np.zeros((78249, 4)).tolist()
-    
-    #adjacent crew probs
-    #dataset[:,2] = np.zeros((78249, 4)).tolist()
+    #Get bad data
     temp = adj[:,1]
     ar1 = np.where(temp[:,0] == 0)
     ar2 = np.where(temp[:,1] == 0)
@@ -666,43 +651,21 @@ def model1(distances_array,train_split,   real_data,):
     ar4 = np.where(temp[:,3] == 0)
     bad_dat = np.intersect1d(ar1,ar2)
     bad_dat = np.intersect1d(bad_dat,ar3)
-    bad_dat = np.intersect1d(bad_dat, ar4)
-
+    bad_dat = np.intersect1d(bad_dat,ar4)
     
-    #print(np.where(adj[:,1][0] == 0))
-    #print("yes",np.where(adj[:,1][0] == 0 and adj[:,1][1] == 0 and adj[:,1][2] == 0 and adj[:,1][3] == 0))
-    dataset[:,2] = adj[:,1].tolist()
+    
+    # #adjacent square probs
+    #dataset[:,1] = adj[:,0].tolist()
+    #dataset[:,2] = adj[:,1].tolist()
+    
+    
+    
+    #Remove bad data
     dataset = np.delete(dataset, bad_dat, axis = 0)
-    print(dataset.shape)
-    correct_count = 0
-    for i in range(23770):
-        #print(dataset[i][2])
-        guess1 = np.argmax(np.asarray(dataset[i][2]))
-        guess2 = np.argmin(np.asarray(dataset[i][1]))
-        guess3 = np.argmax(np.asarray(dataset[i][2]) - np.asarray(dataset[i][1]))
-        #print(guess3)
-        #print(dataset[i])
-        correct = np.argmax(np.asarray(dataset[i][3]))
-        #print(correct)
-       
-        if guess1 == correct:
-            correct_count += 1
-            
-    
-    print(correct_count)
-    print("accuracy", correct_count / 23770)
     
     
     
     
-    
-    #x_dataset = dataset.reshape(dataset.shape[0], 8)
-    #print("data",dataset.shape)
-    #print(dataset[0])
-    # dataset = np.load('dataframe.npy', allow_pickle=True)
-    # dataset = pd.DataFrame(dataset)
-    # dataset = dataset.fillna(0.0)
-    # dataset = dataset.to_numpy()
     
     if real_data:
         
@@ -759,10 +722,10 @@ def model1(distances_array,train_split,   real_data,):
         # print(X_test.shape)
 
         # in_size = k
-        drop_out = 0.1
+        drop_out = 0.9
         print(in_size)
-        #nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True) #53, model_type)
-        nn = NN(in_size, 100, 60, 45, 30, 25, 20, 15, 10, 5, .1, 0, 10000, 67, model_type, distances_array, drop_out, True) #53, model_type)
+        nn = NN(in_size, 900, 700, 600, 300, 150, 75, 25, 10, 5, .1, 0.0001, 10, 67, model_type, distances_array, drop_out, True) #53, model_type)
+        #nn = NN(in_size, 150, 100, 80, 60,45, 40, 15, 10, 5, .1, 0, 10000, 67, model_type, distances_array, drop_out, True) #53, model_type)
         
     else:
         X_train = np.random.randn(59042, 1) # matrix of random x data
@@ -1235,7 +1198,7 @@ def balanceSet(X_data, y_data, model_type):
 
 def compareBots(model, shp):
     """This runs bot 1 with and without neural network"""
-    numTrials = 2
+    numTrials = 20
     k = 3
     avg_trial_len = np.zeros((2))
     avg_success_trial_len = np.zeros((2))
@@ -1331,6 +1294,13 @@ def compareBots(model, shp):
             # MUST RECORD THE MOVE IT TAKES
             i = bot2.row
             j = bot2.col
+            
+            if T > 6000:
+                print(f"TimeOut: {T}")
+                avg_trial_len[1] += T
+                flag = False
+                break
+                
 
             if shp2.ship[i][j].contains_alien():
                 print(f"Dead: {T}")
@@ -1422,7 +1392,7 @@ if __name__ == "__main__":
     # open a file, where you stored the pickled data
 
     
-    file = open('Actual2/board.pickle', 'rb')
+    file = open('Actual/board.pickle', 'rb')
     shp = pickle.load(file)
     
     file.close()
@@ -1459,7 +1429,7 @@ if __name__ == "__main__":
     
     #nn = model2(distances,train_split=0.7,  real_data = True)
     #nn = model2(distances,train_split=0.7,  real_data = False)
-    #compareBots(nn, shp)
+    compareBots(nn, shp)
 
 
     #model3(distances,=0.7, num_epochs=100, shp)
