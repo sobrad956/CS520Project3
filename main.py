@@ -346,9 +346,9 @@ class NN:
         self.dW1 = (1/m) * np.dot(dZ1, X)
         self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
     
-    def update_parameters(self, epoch_num):
+    def update_parameters(self):
         # update the weights and biases
-        lr = self.lr/(1+self.decay*(self.i*self.epoch_num))
+        lr = self.lr/(1+self.decay*(self.i*self.e))
         self.W1 = self.W1 - lr * self.dW1
         self.b1 = self.b1 - lr * self.db1
         self.W2 = self.W2 - lr * self.dW2
@@ -439,19 +439,26 @@ class NN:
         
         self.batches_num = math.floor(X.shape[0]/self.batch_size)
         print('num batches:', self.batches_num)
+        test_batch_size = int(math.floor(X_test.shape[0]/self.batches_num))
         y_t = y.T
-        for e in range(self.epochs):
+        for self.e in range(1,self.epochs+1):
             start = 0
             end = self.batch_size
-            for self.i in range(int(self.batches_num)):
+
+            start_test = 0
+            end_test = test_batch_size
+            for self.i in range(1,int(self.batches_num)):
             #for i in range(1):
                 #batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
                 #test_batch_indices = random.sample([i for i in range(X_test.shape[0])], k = self.batch_size)
                 x_batch = X[start:end,]
                 y_batch = y[start:end,]
 
-                x_test_batch = X_test[int(start % X_test.shape[0]) : int(end % X_test.shape[0]),]
-                y_test_batch = y_test[int(start % X_test.shape[0]) : int(end % X_test.shape[0]),]
+                print(x_batch.shape)
+
+                x_test_batch = X_test[start_test:end_test,]
+                y_test_batch = y_test[start_test:end_test,]
+                print(x_test_batch.shape)
                 #print('actual', y_test_batch[0:2,:])
                 
                 # if self.real:
@@ -488,8 +495,8 @@ class NN:
                 
 
                 #acc_tr_batch = self.acc_score(y_batch, self.A8)
-                print("y", y.shape)
-                print("X", X.shape)
+                #print("y", y.shape)
+                #print("X", X.shape)
                 
                 #print()
                 #batch_loss = self.cross_entropy_loss(self.A8, y_batch)
@@ -509,7 +516,7 @@ class NN:
             
                 # update the parameters
                 #print("before update param")
-                self.update_parameters(i)
+                self.update_parameters()
                 
                 #print(x_test_batch[0:2,:].shape)
                 #print('prediction', self.predict(x_test_batch[0:2,:]))
@@ -528,7 +535,7 @@ class NN:
                 self.test_acc_smooth.append(acc_ts)
                 self.train_acc_smooth.append(acc_tr)
 
-                if self.i % 2 == 0:
+                if self.i % 10 == 0:
                     
                     # self.predict(x_test_batch)
                     #test_loss = self.binary_cross_entropy_loss(self.predict(X_test), y_test.T)
@@ -541,7 +548,7 @@ class NN:
                     self.test_accuracies.append(np.mean(self.test_acc_smooth))
                     self.train_accuracies.append(np.mean(self.train_acc_smooth))
 
-                    print(f"epoch {e} iteration {i}: Total train loss = {loss_smooth}, total test loss = {test_loss_smooth}")
+                    print(f"epoch {self.e} iteration {self.i}: Total train loss = {loss_smooth}, total test loss = {test_loss_smooth}")
                     # print(f"iteration {i}: train loss = {loss}, test loss = {test_loss}")
                     self.test_losses_smooth = []
                     self.train_losses_smooth = []
@@ -554,6 +561,9 @@ class NN:
                 #print(self.b1)
                 start = end
                 end += self.batch_size
+
+                start_test = end_test
+                end_test += test_batch_size
 
     
     # predict the labels for new data
@@ -844,6 +854,9 @@ def model1(distances_array,train_split, real_data,):
 def model2(distances_array,train_split,  real_data):
     model_type = 2
     dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
+    cont_lab = np.load('continuous_labels.npy', allow_pickle=True)
+    dataset[:,-1] = np.squeeze(cont_lab)
+    print(dataset[0:6,-1])
     #print(dataset[:,1].shape)
     #print(dataset[:,1][0].shape)
     
@@ -1330,7 +1343,7 @@ def balanceSet(X_data, y_data, model_type):
 
 def compareBots(model, shp):
     """This runs bot 1 with and without neural network"""
-    numTrials = 2
+    numTrials = 10
     k = 3
     avg_trial_len = np.zeros((2))
     avg_success_trial_len = np.zeros((2))
