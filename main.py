@@ -429,9 +429,10 @@ class NN:
         
         start = 0
         end = self.batch_size
-        batches_num = X_test.shape[0]/self.batch_size
+        batches_num = X.shape[0]/self.batch_size
         print(batches_num)
-        for e in self.num_epochs:
+        y_t = y.T
+        for e in range(self.epochs):
             for i in range(int(batches_num)):
             #for i in range(1):
                 #batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
@@ -476,11 +477,14 @@ class NN:
 
                 
 
-                acc_tr_batch = self.acc_score(y_batch, self.A8)
-                acc_tr = self.acc_score(y, self.predict(X))
+                #acc_tr_batch = self.acc_score(y_batch, self.A8)
+                print("y", y.shape)
+                print("X", X.shape)
+                
                 #print()
-                batch_loss = self.cross_entropy_loss(self.A8, y_batch)
-                loss = self.cross_entropy_loss(self.forward_propagation(X, True), y)
+                #batch_loss = self.cross_entropy_loss(self.A8, y_batch)
+                loss = self.cross_entropy_loss(self.forward_propagation(X, True), y_t)
+                acc_tr = self.acc_score(y_t, self.predict(X))
                 # if self.model_type == 1:
                 #     loss = self.cross_entropy_loss(self.A2, y_batch)
                 #     #loss = self.cross_entropy_loss(self.predict(x_batch), y_batch)
