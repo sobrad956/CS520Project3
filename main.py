@@ -798,7 +798,7 @@ def model1(distances_array,train_split, real_data,):
         # print(X_test.shape)
 
         # in_size = k
-        drop_out = 0.6
+        drop_out = 0.7
         print(in_size)
         nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .4, 0.001, 3, 719, model_type, distances_array, drop_out, True) #53, model_type)
         #nn = NN(in_size, 100, 60, 45, 30, 25, 20, 15, 10, 5, .1, 0, 10000, 67, model_type, distances_array, drop_out, True) #53, model_type)
@@ -833,7 +833,24 @@ def model1(distances_array,train_split, real_data,):
 
 def model2(distances_array,train_split,  real_data):
     model_type = 2
-    dataset = np.load('dataframe.npy', allow_pickle=True)
+    dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
+    #print(dataset[:,1].shape)
+    #print(dataset[:,1][0].shape)
+    
+    #dataset[:,1] = np.asarray(adj[:,0].tolist(), dtype=object)
+    #print("test1",dataset[:,1][0])
+    #print("test2", adj[:,0][0])
+    
+    #adjacent alien probs
+    #dataset[:,1] = adj[:,0].tolist()
+    #dataset[:,1] = np.zeros((dataset.shape[0], 4)).tolist()
+    
+    #adjacent crew probs
+    #dataset[:,2] = np.zeros((78249, 4)).tolist()
+    
+    #print(np.where(adj[:,1][0] == 0))
+    #print("yes",np.where(adj[:,1][0] == 0 and adj[:,1][1] == 0 and adj[:,1][2] == 0 and adj[:,1][3] == 0))
+    #dataset[:,2] = adj[:,1].tolist()
     
     if real_data:
         X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
@@ -858,8 +875,8 @@ def model2(distances_array,train_split,  real_data):
         X_test[:,0] = X_test[:,0] / (30*30)
         in_size = (len(dataset[0,1])*2)+1
 
-        y_train = np.squeeze(y_train)
-        y_test = np.squeeze(y_test)
+        #y_train = np.squeeze(y_train)
+        #y_test = np.squeeze(y_test)
 
 
         # temp = X_train.shape[0]
@@ -890,7 +907,7 @@ def model2(distances_array,train_split,  real_data):
 
         # in_size = 5
         drop_out = 0.7
-        nn = NN(in_size, 10, 9, 8, 7, 6, 5, 4, 3, 1, .01, 0.01, 1000, 53, model_type, distances_array, drop_out, True)
+        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .1, 0.001, 2, 719, model_type, distances_array, drop_out, True) #53, model_type)
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5
@@ -1280,18 +1297,19 @@ def balanceSet(X_data, y_data, model_type):
         print()
         return (X_data, y_data)
     else:
-        y = np.bincount(X[:,-1])
+        y = np.bincount(X_D[:,-1].astype('int'))
         ii = np.nonzero(y)[0]
         freq = np.vstack((ii,y[ii])).T
         idx = np.argmin(freq[:,1])
         val = np.argmin(freq[:,0])
         lower_bound = freq[idx,1]
-        q = X[X[:, -1] == val]
-        p = X[X[:, -1] == math.abs(val - 1)]
+        q = X_D[X_D[:, -1].astype('int') == val]
+        p = X_D[X_D[:, -1].astype('int') == abs(val - 1)]
         q = q[np.random.choice(q.shape[0], lower_bound, replace=False), :]
 
         X = np.vstack((p, q))
-        y_data = X[:,-1]
+        y_data = X[:,-1].astype('int')
+        y_data = y_data.reshape(-1, 1)
         X_data = np.delete(X, [-1], axis=1)
         
         return (X_data, y_data)
@@ -1519,12 +1537,12 @@ if __name__ == "__main__":
 
 
     #runSimulate()
-    nn = model1(distances, train_split=0.7, real_data = True)
+    #nn = model1(distances, train_split=0.7, real_data = True)
     #nn = model1(distances,train_split=0.7,  real_data = False)
     
-    #nn = model2(distances,train_split=0.7,  real_data = True)
+    nn = model2(distances,train_split=0.7,  real_data = True)
     #nn = model2(distances,train_split=0.7,  real_data = False)
-    compareBots(nn, shp)
+    #compareBots(nn, shp)
 
 
     #model3(distances,=0.7, num_epochs=100, shp)
