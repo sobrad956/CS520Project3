@@ -419,13 +419,22 @@ class NN:
         distances = self.distances
         X_shuff = np.hstack((X, y))
         np.random.shuffle(X_shuff)
-        X = X_shuff[:,:-5]
-        y = X_shuff[:,-5:]
+        if self.model_type == 1:
+            X = X_shuff[:,:-5]
+            y = X_shuff[:,-5:]
+        else:
+            X = X_shuff[:,:-1]
+            y = X_shuff[:,-1:]
 
         X_shuff = np.hstack((X_test, y_test))
         np.random.shuffle(X_shuff)
-        X_test = X_shuff[:,:-5]
-        y_test = X_shuff[:,-5:]
+        if self.model_type == 1:
+            X_test = X_shuff[:,:-5]
+            y_test = X_shuff[:,-5:]
+        else:
+            X_test = X_shuff[:,:-1]
+            y_test = X_shuff[:,-1:]
+
         
         start = 0
         end = self.batch_size
@@ -907,7 +916,7 @@ def model2(distances_array,train_split,  real_data):
 
         # in_size = 5
         drop_out = 0.7
-        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .1, 0.001, 2, 719, model_type, distances_array, drop_out, True) #53, model_type)
+        nn = NN(1235, 900, 800, 500, 200, 100, 50, 25, 15, 1, .1, 0.001, 2, 719, model_type, distances_array, drop_out, True) #53, model_type)
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5
@@ -951,7 +960,10 @@ def model2(distances_array,train_split,  real_data):
         drop_out = 0.7
         nn = NN(in_size, 600, 500, 400, 300, 200, 100, 50, 25, 1, .01, 0.01, 1000, 53, model_type, distances_array, drop_out, False)
         
-        
+    # print(X_train.shape)
+    # print(X_test.shape)
+    # print(y_train.shape)
+    # print(y_test.shape)
     nn.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
     nn.plotLoss()
     nn.plotAcc()
