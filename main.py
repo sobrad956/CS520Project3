@@ -348,7 +348,7 @@ class NN:
     
     def update_parameters(self, epoch_num):
         # update the weights and biases
-        lr = self.lr/(1+self.decay*epoch_num)
+        lr = self.lr/(1+self.decay*(self.i*self.epoch_num))
         self.W1 = self.W1 - lr * self.dW1
         self.b1 = self.b1 - lr * self.db1
         self.W2 = self.W2 - lr * self.dW2
@@ -436,21 +436,22 @@ class NN:
             y_test = X_shuff[:,-1:]
 
         
-        start = 0
-        end = self.batch_size
-        batches_num = X.shape[0]/self.batch_size
-        print(batches_num)
+        
+        self.batches_num = math.floor(X.shape[0]/self.batch_size)
+        print('num batches:', self.batches_num)
         y_t = y.T
         for e in range(self.epochs):
-            for i in range(int(batches_num)):
+            start = 0
+            end = self.batch_size
+            for self.i in range(int(self.batches_num)):
             #for i in range(1):
                 #batch_indices = random.sample([i for i in range(X.shape[0])], k = self.batch_size)
                 #test_batch_indices = random.sample([i for i in range(X_test.shape[0])], k = self.batch_size)
                 x_batch = X[start:end,]
                 y_batch = y[start:end,]
 
-                x_test_batch = X_test
-                y_test_batch = y_test
+                x_test_batch = X_test[int(start % X_test.shape[0]) : int(end % X_test.shape[0]),]
+                y_test_batch = y_test[int(start % X_test.shape[0]) : int(end % X_test.shape[0]),]
                 #print('actual', y_test_batch[0:2,:])
                 
                 # if self.real:
@@ -492,8 +493,8 @@ class NN:
                 
                 #print()
                 #batch_loss = self.cross_entropy_loss(self.A8, y_batch)
-                loss = self.cross_entropy_loss(self.forward_propagation(X, True), y_t)
-                acc_tr = self.acc_score(y_t, self.predict(X))
+                loss = self.cross_entropy_loss(self.forward_propagation(x_batch, True), y_batch)
+                acc_tr = self.acc_score(y_t, self.predict(x_batch))
                 # if self.model_type == 1:
                 #     loss = self.cross_entropy_loss(self.A2, y_batch)
                 #     #loss = self.cross_entropy_loss(self.predict(x_batch), y_batch)
@@ -527,7 +528,7 @@ class NN:
                 self.test_acc_smooth.append(acc_ts)
                 self.train_acc_smooth.append(acc_tr)
 
-                if i % 2 == 0:
+                if self.i % 2 == 0:
                     
                     # self.predict(x_test_batch)
                     #test_loss = self.binary_cross_entropy_loss(self.predict(X_test), y_test.T)
@@ -636,17 +637,17 @@ def clean_data(dataset, train_split, model_type):
     else:
         y_test = test[:,4:5]   
 
-    print("PRE-BALANCE")
-    print("Train shapes:")
-    print(X_train.shape)
-    print(y_train.shape)
+    # print("PRE-BALANCE")
+    # print("Train shapes:")
+    # print(X_train.shape)
+    # print(y_train.shape)
 
-    print("Test shapes:")
-    print(X_test.shape)
-    print(y_test.shape)
-    print()
+    # print("Test shapes:")
+    # print(X_test.shape)
+    # print(y_test.shape)
+    # print()
 
-    print("Train Reshaped:")
+    # print("Train Reshaped:")
     #print("test", X_train[:,1].shape)
     #print(X_train[:,1].shape)
     HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1234)
@@ -658,19 +659,19 @@ def clean_data(dataset, train_split, model_type):
     else:
         #print(y_train)
         y_train = y_train[:,0].reshape(X_train.shape[0], 1)
-    print(y_train.shape)
+    # print(y_train.shape)
 
-    print()
+    # print()
 
-    print("Test Reshaped:")
+    # print("Test Reshaped:")
     HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1234)
     X_test = np.hstack((X_test[:,0].reshape(-1, 1), HH))
-    print(X_test.shape)
+    # print(X_test.shape)
     if model_type == 1:
         y_test = np.concatenate(y_test[:,0]).reshape(X_test.shape[0], 5)
     else: 
         y_test = y_test[:,0].reshape(X_test.shape[0], 1)
-    print(y_test.shape)
+    # print(y_test.shape)
     
     X_train, y_train = balanceSet(X_train, y_train, model_type)
     X_test, y_test = balanceSet(X_test, y_test, model_type)
@@ -691,7 +692,7 @@ def model1(distances_array,train_split, real_data,):
     adj = np.load('Actual/data_adjacent.npy', allow_pickle=True)
     #print(adj)
     dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
-    print("original:", dataset.shape)
+    #print("original:", dataset.shape)
     #print(dataset[:,1].shape)
     #print(dataset[:,1][0].shape)
     
@@ -719,7 +720,7 @@ def model1(distances_array,train_split, real_data,):
     #print("yes",np.where(adj[:,1][0] == 0 and adj[:,1][1] == 0 and adj[:,1][2] == 0 and adj[:,1][3] == 0))
     #dataset[:,2] = adj[:,1].tolist()
     dataset = np.delete(dataset, bad_dat, axis = 0)
-    print("removed shape:", dataset.shape)
+    #print("removed shape:", dataset.shape)
     """
     correct_count = 0
     for i in range(23770):
@@ -916,7 +917,7 @@ def model2(distances_array,train_split,  real_data):
 
         # in_size = 5
         drop_out = 0.7
-        nn = NN(1235, 900, 800, 500, 200, 100, 50, 25, 15, 1, .1, 0.001, 2, 719, model_type, distances_array, drop_out, True) #53, model_type)
+        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 1, 0.1, 0.01, 2, 719, model_type, distances_array, drop_out, True) #53, model_type)
     else:
         X_train = np.random.randn(59042, 5) # matrix of random x data
         y_train = X_train[:,1] > 0.5

@@ -508,7 +508,7 @@ class Ship:
         return mask
     
     def open_cell_distances(self):
-        print("here")
+        #print("here")
         """Creates the distance "mask" for applying"""
         open_cells = []
         for open_i in range(self.D):
@@ -537,7 +537,7 @@ class Ship:
         
     
     def get_one_distances(self):
-        print("here2")
+        #print("here2")
         return self.one_d_distances
         
 

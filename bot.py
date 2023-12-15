@@ -225,7 +225,7 @@ class Bot:
     def nn_bot_move(self, prediction):
         #Move the bot based on the prediction the nn makes based on the current board state
         next_move = np.argmax(prediction)
-        print("next move", next_move)
+        #print("next move", next_move)
         
         if next_move == 0 and self.col != 0:
             self.move_left()
