@@ -700,22 +700,14 @@ def clean_data(dataset, train_split, model_type):
 def model1(distances_array,train_split, real_data,):
     model_type = 1
     adj = np.load('Actual/data_adjacent.npy', allow_pickle=True)
-    #print(adj)
     dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
-    #print("original:", dataset.shape)
-    #print(dataset[:,1].shape)
-    #print(dataset[:,1][0].shape)
-    
-    #dataset[:,1] = np.asarray(adj[:,0].tolist(), dtype=object)
-    #print("test1",dataset[:,1][0])
-    #print("test2", adj[:,0][0])
-    
+  
     #adjacent alien probs
     #dataset[:,1] = adj[:,0].tolist()
-    #dataset[:,1] = np.zeros((dataset.shape[0], 4)).tolist()
     
     #adjacent crew probs
-    #dataset[:,2] = np.zeros((78249, 4)).tolist()
+    #dataset[:,2] = adj[:,1].tolist()
+    
     temp = adj[:,1]
     ar1 = np.where(temp[:,0] == 0)
     ar2 = np.where(temp[:,1] == 0)
@@ -726,9 +718,6 @@ def model1(distances_array,train_split, real_data,):
     bad_dat = np.intersect1d(bad_dat, ar4)
 
     
-    #print(np.where(adj[:,1][0] == 0))
-    #print("yes",np.where(adj[:,1][0] == 0 and adj[:,1][1] == 0 and adj[:,1][2] == 0 and adj[:,1][3] == 0))
-    #dataset[:,2] = adj[:,1].tolist()
     dataset = np.delete(dataset, bad_dat, axis = 0)
     #print("removed shape:", dataset.shape)
     """
