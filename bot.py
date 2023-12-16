@@ -203,14 +203,48 @@ class Bot:
         cur_state = []
         cur_state.append(self.ship.ship[self.row, self.col].one_d_idx / 900)
 
-        ap = self.ship.get_alien_probs()
-        cp = self.ship.get_crew_probs()
+        ap_arr = self.ship.get_alien_probs()
+        cp_arr = self.ship.get_crew_probs()
+        
+        ap = []
+        cp = []
+        
+        if(self.col > 0):
+            ap.append(ap_arr[self.row, self.col-1])
+            cp.append(cp_arr[self.row, self.col-1])
+        else:
+            ap.append(1)
+            cp.append(0)
+        if(self.col < self.ship.D-1):
+            ap.append(ap_arr[self.row, self.col+1])
+            cp.append(cp_arr[self.row, self.col+1])
+        else:
+            ap.append(1)
+            cp.append(0)
+            
+        if(self.row > 0):
+            ap.append(ap_arr[self.row-1, self.col])
+            cp.append(cp_arr[self.row-1, self.col])
+        else:
+            ap.append(1)
+            cp.append(0)
+        if(self.row < self.ship.D-1):
+            ap.append(ap_arr[self.row+1, self.col])
+            cp.append(cp_arr[self.row+1, self.col])
+        else:
+            ap.append(1)
+            cp.append(0)
+            
+        
+        
+        
+        
+        #
+        #up = row-1
 
         
 
-        ap = ap[self.ship.open_cell_indices()].flatten()
-        cp = cp[self.ship.open_cell_indices()].flatten()
-
+        
         cur_state.append(ap)
         cur_state.append(cp)
         

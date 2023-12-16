@@ -71,7 +71,7 @@ class NN:
     
     #Activation & Loss Functions
     def sigmoid(self, x):
-        return (1 / (1 + np.exp(-x)))
+        return (1 / (1 + np.exp(-x.astype(float))))
     
     def d_sigmoid(self, x):
     
@@ -99,20 +99,15 @@ class NN:
     
     def cross_entropy_loss(self, y_pred, y_true): #For multiclass classification
         m = y_true.shape[1]
-        #print('y_true:', y_true.shape)
-        #print('y_pred:', y_pred.shape)
         return -(1/m) * np.sum(np.multiply(y_true, np.log(y_pred +1e-15))) #Added small error for divide by zero errors
 
     # forward propagation
     def forward_propagation(self, X, test = False, deploy = False):    
         # compute the activation of the hidden layer
-        #print(np.min(X))
-        #print("before layer 1")
-        #print(np.min(self.W1))
+
         Z1 = np.matmul(self.W1, X.T) + self.b1
-        #print('Z1:',Z1.shape)
+
         A1 = self.relu(Z1)
-        #print("A1", A1.shape)
 
         #dropout
         if not test:
@@ -122,19 +117,11 @@ class NN:
             np.random.shuffle(self.D1)
             self.D1 = self.D1.reshape((A1.shape[0], A1.shape[1]))
             A1 = np.multiply(self.D1, A1)
-        #if not deploy:
-        #    A1 = np.multiply(self.D1, A1)
-        #print("A1,2", A1.shape)
 
-        #self.A1 = self.relu(self.Z1)
     
         # compute the activation of the output layer
-        #print("before layer 2")
         Z2 = np.matmul(self.W2, A1) + self.b2
-        #print('Z2:',Z2.shape)
-        #if self.model_type == 1:
-        #   A2 = self.softmax(Z2)
-        #else:
+
         A2 = self.relu(Z2)
         #dropout
         if not test:
@@ -173,7 +160,6 @@ class NN:
             A4 = np.multiply(self.D4, A4)
 
         Z5 = np.matmul(self.W5, A4) + self.b5
-        #print('Z5:',Z5.shape)
         A5 = self.relu(Z5)
         #dropout
         if not test:
@@ -186,7 +172,7 @@ class NN:
             A5 = np.multiply(self.D5, A5)
 
         Z6 = np.matmul(self.W6, A5) + self.b6
-        #print('Z6:',Z6.shape)
+
         A6 = self.relu(Z6)
         #dropout
         if not test:
@@ -199,7 +185,7 @@ class NN:
             A6 = np.multiply(self.D6, A6)
 
         Z7 = np.matmul(self.W7, A6) + self.b7
-        #print('Z7:',Z7.shape)
+
         A7 = self.relu(Z7)
         #dropout
         if not test:
@@ -218,7 +204,7 @@ class NN:
         if self.model_type == 2:
             A8 = self.sigmoid(Z8)
         else:
-            #print(Z8)
+
             A8 = self.softmax(Z8)
 
 
@@ -241,17 +227,8 @@ class NN:
             self.Z8 = Z8
             self.A8 = A8
         
-        #print(A8.shape)
+
         return A8
-        # #print(X.shape)
-        # #print(X.T[5,8:,])
-        # #print("here")
-        # #print(X.T[5:9,].T.shape)
-        # zero = np.zeros((67,1))
-        # ret = np.append(X.T[5:9,:].T, zero, axis=1)
-        # #print("herhereh")
-        # #print(ret.shape)
-        # return ret.T
 
     
     # backward propagation
@@ -259,33 +236,13 @@ class NN:
         #pass
         m = y.shape[0]
 
-        # compute the derivative of the loss with respect to A2 (output)
-        #y = y.T
-        
-        #print('y shape: ', y.shape)
-        #print('X shape: ', X.shape)
-        #print('ypred shape: ', self.A2.shape)
 
-        #loss = self.binary_cross_entropy_loss(self.A2, y)
-
-        #print('Loss: ', loss)
-
-        #print(self.A2.shape)
-       
         if self.model_type == 1:
             dA8 = ((self.A8) - y)
         else:
             #dA3 = (self.A3 * (1-self.A3))
             dA8 = - (y/(self.A8)+1e-15) + ((1-y)/((1-self.A8)+1e-15))
-        #if self.model_type == 1:
-        #    dA3 = (self.softmax(self.A3) - y) #sus
-        #else:
-        #    dA3 = - (y/(self.A3)+1e-15) + ((1-y)/((1-self.A3)+1e-15)) #This is correct
-
-        #print('dA2 shape: ', dA2.shape)
-    
-        # compute the derivative of the activation function of the output layer
-        #dZ2 = dA2 * self.d_relu(self.Z2)
+        
         dZ8 = dA8 * (self.A8 * (1-self.A8))
         self.dW8 = (1/m) * np.matmul(dZ8, self.A7.T)
         self.db8 = (1/m) * np.sum(dZ8, axis=1, keepdims=True)
@@ -337,18 +294,15 @@ class NN:
         dZ1 = dA1 * self.d_relu(self.A1)
         dZ1 = np.multiply(dZ1, self.D1) #DROPOUT
             
-            #(self.A1 * (1-self.A1))
-        
-        # print("dz1")
-        # print(np.min(dZ1))
-        # print()
+
         # # compute the derivative of the weights and biases of the hidden layer
         self.dW1 = (1/m) * np.dot(dZ1, X)
         self.db1 = (1/m) * np.sum(dZ1, axis=1, keepdims=True)
     
     def update_parameters(self):
         # update the weights and biases
-        lr = self.lr/(1+self.decay*(self.i*self.e))
+        lr = self.lr/(1+self.decay*(self.i+ (self.batches_num*self.e)))
+        #print(lr)
         self.W1 = self.W1 - lr * self.dW1
         self.b1 = self.b1 - lr * self.db1
         self.W2 = self.W2 - lr * self.dW2
@@ -454,12 +408,14 @@ class NN:
                 x_batch = X[start:end,]
                 y_batch = y[start:end,]
 
-                print(x_batch.shape)
-
                 x_test_batch = X_test[start_test:end_test,]
                 y_test_batch = y_test[start_test:end_test,]
-                print(x_test_batch.shape)
-                #print('actual', y_test_batch[0:2,:])
+           
+
+                #x_batch = X
+                #y_batch = y
+
+                # forward propagation
                 
                 # if self.real:
                 #     for elem in x_batch:
@@ -473,14 +429,7 @@ class NN:
                 #         idx = int(elem[0]*900)
                 #         elem = np.multiply(elem, distances[idx])
                 #         #pass
-                    
-
-                #x_batch = X
-                #y_batch = y
-
-                # forward propagation
-                #print("before forward prob")
-                #print(x_batch[0])
+                
                 self.forward_propagation(x_batch)
 
                 
@@ -495,35 +444,21 @@ class NN:
                 
 
                 #acc_tr_batch = self.acc_score(y_batch, self.A8)
-                #print("y", y.shape)
-                #print("X", X.shape)
-                
-                #print()
+ 
                 #batch_loss = self.cross_entropy_loss(self.A8, y_batch)
                 loss = self.cross_entropy_loss(self.forward_propagation(x_batch, True), y_batch)
-                acc_tr = self.acc_score(y_t, self.predict(x_batch))
-                # if self.model_type == 1:
-                #     loss = self.cross_entropy_loss(self.A2, y_batch)
-                #     #loss = self.cross_entropy_loss(self.predict(x_batch), y_batch)
-                # else:
-                #     #loss = self.binary_cross_entropy_loss(self.A2, y_batch)
-                #     #loss = self.binary_cross_entropy_loss(self.predict(x_batch), y_batch)
+                acc_tr = self.acc_score(y_batch, self.predict(x_batch))
+         
             
                 # backward propagation
-                #print("before back prob")
+
                 self.zero_grad()
                 self.backward_propagation(x_batch, y_batch)
             
                 # update the parameters
-                #print("before update param")
+
                 self.update_parameters()
-                
-                #print(x_test_batch[0:2,:].shape)
-                #print('prediction', self.predict(x_test_batch[0:2,:]))
-                
-                
-                #print(f"iteration {i}: train loss = {loss}")
-                #print("before predict")
+         
                 acc_ts = self.acc_score(y_test_batch, self.predict(x_test_batch))
 
                 test_loss = self.cross_entropy_loss(self.forward_propagation(x_test_batch, True), y_test_batch)
@@ -557,13 +492,13 @@ class NN:
                     
                     
 
-                #print(self.A2)
-                #print(self.b1)
                 start = end
                 end += self.batch_size
 
                 start_test = end_test
                 end_test += test_batch_size
+        self.i = 0
+        self.e = 0
 
     
     # predict the labels for new data
@@ -660,8 +595,12 @@ def clean_data(dataset, train_split, model_type):
     # print("Train Reshaped:")
     #print("test", X_train[:,1].shape)
     #print(X_train[:,1].shape)
-    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 1234)
-    #HH = np.hstack(((np.expand_dims(X_train[:,1],0)),np.expand_dims(X_train[:,2],0))).reshape(X_train.shape[0], 8)
+    print(X_train.shape)
+    #np.concatenate(X_train[:,1])
+    print(X_train[:,2])
+
+    HH = np.hstack((np.concatenate(X_train[:,1]), np.concatenate(X_train[:,2]))).reshape(X_train.shape[0], 8)
+    #HH = np.hstack(((np.expand_dims(X_train[:,1],0)),np.expand_dims(X_train[:,2],0))).reshape(X_train.shape[0], 1800)
     X_train = np.hstack((X_train[:,0].reshape(-1, 1), HH))
     #print(X_train.shape)
     if model_type == 1:
@@ -674,7 +613,8 @@ def clean_data(dataset, train_split, model_type):
     # print()
 
     # print("Test Reshaped:")
-    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 1234)
+    HH = np.hstack((np.concatenate(X_test[:,1]), np.concatenate(X_test[:,2]))).reshape(X_test.shape[0], 8)
+
     X_test = np.hstack((X_test[:,0].reshape(-1, 1), HH))
     # print(X_test.shape)
     if model_type == 1:
@@ -687,12 +627,12 @@ def clean_data(dataset, train_split, model_type):
     X_test, y_test = balanceSet(X_test, y_test, model_type)
 
     print("Train shapes:")
-    print(X_train.shape)
-    print(y_train.shape)
+    #print(X_train.shape)
+    #print(y_train.shape)
 
     print("Test shapes:")
-    print(X_test.shape)
-    print(y_test.shape)
+    #print(X_test.shape)
+    #print(y_test.shape)
     print()
     return(X_train, y_train, X_test, y_test)
 
@@ -700,13 +640,20 @@ def clean_data(dataset, train_split, model_type):
 def model1(distances_array,train_split, real_data,):
     model_type = 1
     adj = np.load('Actual/data_adjacent.npy', allow_pickle=True)
+    #dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
     dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
+    #labels = np.load('Actual/labels.npy', allow_pickle=True)
+    #full_board = np.load('Actual/data_with_walls.npy', allow_pickle=True)
+    
+    
   
     #adjacent alien probs
-    #dataset[:,1] = adj[:,0].tolist()
+    dataset[:,1] = adj[:,0].tolist()
     
     #adjacent crew probs
-    #dataset[:,2] = adj[:,1].tolist()
+    dataset[:,2] = adj[:,1].tolist()
+
+    
     
     temp = adj[:,1]
     ar1 = np.where(temp[:,0] == 0)
@@ -716,41 +663,14 @@ def model1(distances_array,train_split, real_data,):
     bad_dat = np.intersect1d(ar1,ar2)
     bad_dat = np.intersect1d(bad_dat,ar3)
     bad_dat = np.intersect1d(bad_dat, ar4)
+    
 
     
     dataset = np.delete(dataset, bad_dat, axis = 0)
-    #print("removed shape:", dataset.shape)
-    """
-    correct_count = 0
-    for i in range(23770):
-        #print(dataset[i][2])
-        guess1 = np.argmax(np.asarray(dataset[i][2]))
-        guess2 = np.argmin(np.asarray(dataset[i][1]))
-        guess3 = np.argmax(np.asarray(dataset[i][2]) - np.asarray(dataset[i][1]))
-        #print(guess3)
-        #print(dataset[i])
-        correct = np.argmax(np.asarray(dataset[i][3]))
-        #print(correct)
-       
-        if guess1 == correct:
-            correct_count += 1
-            
-    
-    print(correct_count)
-    print("accuracy", correct_count / 23770)
-    """
     
     
+
     
-    
-    
-    #x_dataset = dataset.reshape(dataset.shape[0], 8)
-    #print("data",dataset.shape)
-    #print(dataset[0])
-    # dataset = np.load('dataframe.npy', allow_pickle=True)
-    # dataset = pd.DataFrame(dataset)
-    # dataset = dataset.fillna(0.0)
-    # dataset = dataset.to_numpy()
     
     if real_data:
         
@@ -803,13 +723,14 @@ def model1(distances_array,train_split, real_data,):
         # X_train = reduced_data[:temp,]
         # X_test = reduced_data[temp:,]
 
-        # print(X_train.shape)
-        # print(X_test.shape)
+        # # print(X_train.shape)
+        # # print(X_test.shape)
 
         # in_size = k
         drop_out = 0.7
-        print(in_size)
-        nn = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .4, 0.001, 3, 719, model_type, distances_array, drop_out, True) #53, model_type)
+        #rint(in_size)
+        #nn = NN(in_size, 1000, 900, 700, 550, 400, 150, 75, 25, 5, .1, 0.0001, 5, 719, model_type, distances_array, drop_out, True) #53, model_type)
+        nn = NN(in_size, 80, 45, 30, 25, 20, 15, 12, 10, 5, .1, 0.000001, 10, 719, model_type, distances_array, drop_out, True) #53, model_type)
         #nn = NN(in_size, 100, 60, 45, 30, 25, 20, 15, 10, 5, .1, 0, 10000, 67, model_type, distances_array, drop_out, True) #53, model_type)
         
     else:
@@ -972,11 +893,38 @@ def model2(distances_array,train_split,  real_data):
     nn.plotAcc()
     return nn
 
-def model3(distances_array,train_split, num_epochs, shp):
-    #return 0
-    model_type = 3
-    drop_out = 0.7
+def model3(distances_array, num_epochs, shp):
+    train_split = 0.7
     dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
+    adj = np.load('Actual/data_adjacent.npy', allow_pickle=True)
+    #dataset = np.load('Actual/dataframe.npy', allow_pickle=True)
+    #labels = np.load('Actual/labels.npy', allow_pickle=True)
+    #full_board = np.load('Actual/data_with_walls.npy', allow_pickle=True)
+    
+    #adjacent alien probs
+    dataset[:,1] = adj[:,0].tolist()
+    
+    #adjacent crew probs
+    dataset[:,2] = adj[:,1].tolist()
+
+    
+    
+    temp = adj[:,1]
+    ar1 = np.where(temp[:,0] == 0)
+    ar2 = np.where(temp[:,1] == 0)
+    ar3 = np.where(temp[:,2] == 0)
+    ar4 = np.where(temp[:,3] == 0)
+    bad_dat = np.intersect1d(ar1,ar2)
+    bad_dat = np.intersect1d(bad_dat,ar3)
+    bad_dat = np.intersect1d(bad_dat, ar4)
+    
+    dataset = np.delete(dataset, bad_dat, axis = 0)
+
+    
+    #return 0
+    model_type = 1
+    drop_out = 0.7
+    
     # Simulate initial board states
     X_train, y_train, X_test, y_test = clean_data(dataset, train_split, model_type)
 
@@ -985,42 +933,152 @@ def model3(distances_array,train_split, num_epochs, shp):
     X_test[:,0] = X_test[:,0] / (30*30)
     in_size = (len(dataset[0,1])*2)+1
 
-    #y_train = np.squeeze(y_train)
-    #y_test = np.squeeze(y_test)
+    avg_success_rate_T = []
+    avg_trial_len_T = []
+    avg_success_trial_len_T = []
     
-    # Train model 1 on each board state to get predicted next move based on true success labels
+    #Train MODEL 1 HERE 
+    nn_actor = NN(9, 80, 45, 30, 25, 20, 15, 12, 10, 5, .1, 0.001, 5, 719, 1, distances_array, drop_out, True) 
+    nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
+    print("ACTOR FINISHED")
+    model3_data, labels, avg_success_rate, avg_trial_len, avg_success_trial_len =  nn_bot_data(nn_actor, shp)
+    avg_success_rate_T.append(avg_success_rate)
+    avg_trial_len_T.append(avg_trial_len)
+    avg_success_trial_len_T.append(avg_success_trial_len)
+
+    num_rows = len(model3_data)
+    model3_data = np.asarray(model3_data)
+    model3_data = model3_data.reshape(num_rows, 10)
+    labels = labels.T
+
+    dataset = np.hstack((model3_data, labels.reshape(-1,1)))
+
+    boundary = int(math.ceil(dataset.shape[0]*train_split))
+
+    rng = default_rng()
+    idx = rng.choice(dataset.shape[0], size = boundary, replace=False)
+    mask = np.ones(dataset.shape[0], dtype=bool)
+    mask[idx] = False
+
+    train = dataset[~mask, :]
+    test = dataset[mask, :]
+
+    X_train = train[:,:-1]
+    X_test = test[:,:-1]
+
+    y_train = train[:,-1]
+    y_train = y_train.reshape(-1, 1)
+    y_test = test[:,-1]
+    y_test = y_test.reshape(-1, 1)
+    print(X_train.shape)
+    print(y_train.shape)
     
-    nn_actor = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True)
-    nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
-    moves_train = nn_actor.predict(X_train)
-    moves_test = nn_actor.predict(X_test)
 
-    # Move all the states [NEED TO IMPLEMENT]
-    X_train = X_train.transition(moves_train)
-    X_test = X_test.transition(moves_test)
+    #Maybe we need to unsqueeze this?
 
-
-    # Train model 2 on each board state to predict probability of success
-    nn_critic = NN(in_size, 900, 800, 500, 200, 100, 50, 25, 15, 5, .5, 0.01, 2000, 67, model_type, distances_array, drop_out, True)
-    nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
-    y_train = nn_critic.predict(X_train)
-    y_test = nn_critic.predict(X_test)
+    # Train MODEL 2 HERE
+    nn_critic = NN(10, 80, 45, 30, 25, 20, 15, 10, 5, 1, .1, 0.01, 5, 67, 2, distances_array, drop_out, True)
+    nn_critic.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
+    print("CRITIC FINISHED")
+    
+    
 
     # Repeat:
-    for epoch in num_epochs:
+    for epoch in range(num_epochs):
         # Update model 1 using labels from model 2 instead of actual success labels
+        print("inside epic loop")
+        for elem in model3_data:
+            prob = []
+            for i in range(5):
+                #print(i)
+                elem[9] = i
+                prob.append(nn_critic.predict(elem, True))
+            elem[9] = np.argmax(np.asarray(prob))
+        print("out of first loop")
+        one_hot = np.zeros((num_rows, 5))
+        for i in range(model3_data.shape[0]):
+            one_hot[i,model3_data[i,9]] = 1
+        model3_data = np.delete(model3_data, [-1], axis=1)
+        model3_data = np.hstack((model3_data, one_hot))
+        
+        print("after 1 hot added", model3_data.shape)
+
+        boundary = int(math.ceil(model3_data.shape[0]*train_split))
+
+        rng = default_rng()
+        idx = rng.choice(model3_data.shape[0], size = boundary, replace=False)
+        mask = np.ones(model3_data.shape[0], dtype=bool)
+        mask[idx] = False
+
+        train = model3_data[~mask, :]
+        test = model3_data[mask, :]
+
+        X_train = train[:,:-5]
+        X_test = test[:,:-5]
+
+        y_train = train[:,-5:]
+        y_test = test[:,-5:]
+        
+        print("X_train", X_train.shape)
+        print("y_train", y_train.shape)
+        
         nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
-        moves_train = nn_actor.predict(X_train)
-        moves_test = nn_actor.predict(X_test)
-        # Move all states [NEED TO IMPLEMENT]
-        X_train = X_train.transition(moves_train)
-        X_test = X_test.transition(moves_test)
-        # Update model 2 on each board state to predict probability of success again
-        nn_actor.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
-        y_train = nn_critic.predict(X_train)
-        y_test = nn_critic.predict(X_test)
-    
+        model3_data, labels, avg_success_rate, avg_trial_len, avg_success_trial_len =  nn_bot_data(nn_actor, shp)
+        avg_success_rate_T.append(avg_success_rate)
+        avg_trial_len_T.append(avg_trial_len)
+        avg_success_trial_len_T.append(avg_success_trial_len)
+
+        num_rows = len(model3_data)
+        model3_data = np.asarray(model3_data)
+        model3_data = model3_data.reshape(num_rows, 10)
+        labels = labels.T
+
+        dataset = np.hstack((model3_data, labels.reshape(-1,1)))
+
+        boundary = int(math.ceil(dataset.shape[0]*train_split))
+
+        rng = default_rng()
+        idx = rng.choice(dataset.shape[0], size = boundary, replace=False)
+        mask = np.ones(dataset.shape[0], dtype=bool)
+        mask[idx] = False
+
+        train = dataset[~mask, :]
+        test = dataset[mask, :]
+
+        X_train = train[:,:-1]
+        X_test = test[:,:-1]
+
+        y_train = train[:,-1]
+        y_train = y_train.reshape(-1, 1)
+        y_test = test[:,-1]
+        y_test = y_test.reshape(-1, 1)
+        nn_critic.train(X_train.astype(float), y_train.astype(float), X_test.astype(float), y_test.astype(float))
+        
     # Run a bot with model 1.
+    plt.plot(avg_success_rate_T)
+    plt.title('Average Success Rate of Actor Network Bot over Time')
+    plt.xlabel('Number of training iterations by Critic Network')
+    plt.ylabel('Average Success Rate of Actor Network')
+    plt.savefig('Success_Rate_AC.png')
+    plt.show()
+    plt.close()
+
+    plt.plot(avg_trial_len_T)
+    plt.title('Average Trial Length of Actor Network Bot over Time')
+    plt.xlabel('Number of training iterations by Critic Network')
+    plt.ylabel('Average Trial Length')
+    plt.savefig('Trial_Length_AC.png')
+    plt.show()
+    plt.close()
+
+    plt.plot(avg_success_trial_len_T)
+    plt.title('Average Length of Successful Trial of Actor Network Bot over Time')
+    plt.xlabel('Number of training iterations by Critic Network')
+    plt.ylabel('Average Length of Successful Trial')
+    plt.savefig('Succ_Trial_Length_AC.png')
+    plt.show()
+    plt.close()
+
     compareBots(nn_actor, shp)
 
 
@@ -1210,10 +1268,7 @@ def simulateData(k,boards):
     
     data = np.asarray(data)
     labels = np.concatenate(labels).ravel().T.reshape(-1,1)
-    print(data.shape)
-    print(labels.shape)
-    
-    #print(dataframe[-2:])
+
     np.save('Actual/data.npy', data)
     np.save('Actual/labels.npy', labels)
     
@@ -1332,7 +1387,7 @@ def balanceSet(X_data, y_data, model_type):
 
 def compareBots(model, shp):
     """This runs bot 1 with and without neural network"""
-    numTrials = 10
+    numTrials = 50
     k = 3
     avg_trial_len = np.zeros((2))
     avg_success_trial_len = np.zeros((2))
@@ -1343,6 +1398,7 @@ def compareBots(model, shp):
     shp1 = shp
     shp2 = copy.deepcopy(shp)
     alpha = 0.5
+    model3_data = []
 
     for trial in range(numTrials):
        
@@ -1383,6 +1439,12 @@ def compareBots(model, shp):
             bot1.bot1_move()
             i = bot1.row
             j = bot1.col
+            
+            if T > 3000:
+                print(f"Timeout: {T}")
+                avg_trial_len[0] += T
+                flag = False
+                break
 
             if shp1.ship[i][j].contains_alien():
                 print(f"Dead: {T}")
@@ -1420,14 +1482,23 @@ def compareBots(model, shp):
             
             # Neural Network powered bot move sequence
             cur_board_state = bot2.get_cur_state()
-            #print(cur_board_state.shape)
-            print(cur_board_state)
+            
+            #print(cur_board_state)
             pred = model.predict(cur_board_state, True)
-            bot2.nn_bot_move(pred)
+            move = bot2.nn_bot_move(pred)
+            
+            np.append(cur_board_state, move)
+            model3_data.append(cur_board_state)
             
             # MUST RECORD THE MOVE IT TAKES
             i = bot2.row
             j = bot2.col
+            
+            if T > 3000:
+                print(f"Timeout: {T}")
+                avg_trial_len[1] += T
+                flag = False
+                break
 
             if shp2.ship[i][j].contains_alien():
                 print(f"Dead: {T}")
@@ -1512,6 +1583,116 @@ def compareBots(model, shp):
     plt.show()
     plt.close()
     
+def nn_bot_data(model, shp):
+    """This runs bot 1 with and without neural network"""
+    numTrials = 2
+    k = 3
+    avg_trial_len = 0
+    avg_success_trial_len = 0
+    avg_success_rate = 0
+    
+    success_flag = False
+    
+    shp1 = shp
+    shp2 = copy.deepcopy(shp)
+    alpha = 0.5
+    model3_data = []
+    labels = []
+
+    for trial in range(numTrials):
+       
+        i, j = shp1.get_unoccupied_cell()
+        bot2 = Bot(i, j, k, shp2, 2, alpha)
+        shp2.bot = bot2
+
+        start_cells = []
+        i, j = shp1.get_unoccupied_cell()
+        shp2.ship[i][j].add_crew()
+        start_cells.append(i)
+        start_cells.append(j)
+
+        i, j = shp1.get_unoccupied_alien_cell(k)
+        alien2 = Alien(i, j, shp2)
+
+        shp2.distances_from_crew()
+        # print("Calculated distances")
+   
+        shp2.init_crew_prob_one()
+                    
+        shp2.init_alien_prob_one()
+
+        
+        print('Trial:', trial)
+
+        #Run bot2
+        T = 0
+        flag = True
+        while flag:
+            
+            # Neural Network powered bot move sequence
+            cur_board_state = bot2.get_cur_state()
+            
+            #print(cur_board_state)
+            pred = model.predict(cur_board_state, True)
+            move = bot2.nn_bot_move(pred)
+            
+            cur_board_state = np.append(cur_board_state,move)
+            model3_data.append(cur_board_state)
+            
+            # MUST RECORD THE MOVE IT TAKES
+            i = bot2.row
+            j = bot2.col
+            
+            if T > 3000:
+                print(f"Timeout: {T}")
+                avg_trial_len += T
+                flag = False
+                labels.append(np.zeros(3002))
+                break
+
+            if shp2.ship[i][j].contains_alien():
+                print(f"Dead: {T}")
+                avg_trial_len += T
+                flag = False
+                labels.append(np.zeros(T+1))
+                break
+            if shp2.ship[i][j].contains_crew():
+                print(f"Saved: {T}")
+                avg_success_trial_len += T
+                avg_success_rate += 1
+                avg_trial_len += T
+                shp2.ship[i][j].remove_crew()
+                labels.append(np.zeros(T+1))
+                flag = False
+                break
+
+            shp2.one_one_bot_move_update()
+            #print("bot move: ", shp.get_crew_probs())
+
+            if alien2.move():
+                print(f"Dead: {T}")
+                avg_trial_len += T
+                flag = False
+                labels.append(np.zeros(T+1))
+                break
+            shp2.one_one_alien_move_update()
+                        
+            alien_beep = bot2.detect_alien()
+            shp2.one_one_alien_beep_update(alien_beep)
+            crew_beep = bot2.new_detect_crew(start_cells[0], start_cells[1])
+            shp2.one_one_crew_beep_update(crew_beep)
+            T += 1
+        shp2.empty_ship()
+    if avg_success_rate != 0:
+        avg_success_trial_len /= avg_success_rate
+    avg_success_rate /= numTrials
+    avg_trial_len /= numTrials
+
+    print(len(labels))
+    print(len(model3_data))
+    labels = np.concatenate(labels, axis=None).ravel()
+    print(len(labels))
+    return model3_data, labels, avg_success_rate, avg_trial_len, avg_success_trial_len
 
     
 if __name__ == "__main__":
@@ -1555,9 +1736,11 @@ if __name__ == "__main__":
     #nn = model1(distances, train_split=0.7, real_data = True)
     #nn = model1(distances,train_split=0.7,  real_data = False)
     
-    nn = model2(distances,train_split=0.7,  real_data = True)
+    #nn = model2(distances,train_split=0.7,  real_data = True)
     #nn = model2(distances,train_split=0.7,  real_data = False)
+    #dat = nn_bot_data(nn, shp)
     #compareBots(nn, shp)
+    model3(distances, 2, shp)
 
 
     #model3(distances,=0.7, num_epochs=100, shp)
